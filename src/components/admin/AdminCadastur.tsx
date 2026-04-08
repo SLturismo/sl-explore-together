@@ -82,12 +82,12 @@ const AdminCadastur = () => {
     if (existingId) {
       ({ error } = await supabase
         .from("site_content")
-        .update({ content: contentJson as unknown as Record<string, unknown> })
+        .update({ content: contentJson as any })
         .eq("id", existingId));
     } else {
       const result = await supabase
         .from("site_content")
-        .insert({ section_key: "cadastur", content: contentJson as unknown as Record<string, unknown> })
+        .insert([{ section_key: "cadastur", content: contentJson as any }])
         .select()
         .single();
       error = result.error;

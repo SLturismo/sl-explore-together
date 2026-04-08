@@ -1,57 +1,67 @@
 
 
-# Plano: Ajustes no Site SL Turismo
+# Plano: Cadastur, WhatsApp, Admin e Footer
 
-## 1. Centralizar menu de navegação no Header
+## 1. Redesign da seção Cadastur
 
-Atualmente o menu desktop fica alinhado à direita. Vou centralizar os links de navegação entre o logo (esquerda) e o botão de contato (direita), usando `justify-between` com 3 blocos: logo | nav centralizado | botão contato.
+Redesenhar `src/components/Cadastur.tsx` seguindo o estilo das imagens de referência:
+- Layout em duas colunas: certificado (imagem editavel via admin) a esquerda + informacoes a direita
+- Titulo "Credenciais e Seguranca"
+- Numero do Cadastur, descricao, validade e link de verificacao
+- Dados virao da tabela `site_content` (section_key: `cadastur`) para ser editavel no admin
+- Dados default hardcoded enquanto admin nao preencher
 
-**Arquivo:** `src/components/Header.tsx`
+## 2. Cadastur no Footer
 
-## 2. Renomear seção "Planeje sua Viagem" para incluir Eventos
+Adicionar no `src/components/Footer.tsx`:
+- Linha com icone ShieldCheck + "Agencia regularizada pelo Ministerio do Turismo - Cadastur N..."
+- Link "Acesso Admin" apontando para `/admin/login`
 
-Atualizar o título da seção e o formulário para refletir que a agência também organiza eventos:
-- Título: "Planeje sua **Viagem ou Evento**"
-- Subtítulo atualizado mencionando viagens e eventos
-- Adicionar opção "Organização de Evento" no select de tipo
-- Atualizar o label do nav de "Planeje sua Viagem" para "Viagens & Eventos"
-- Atualizar o placeholder do campo destino para incluir "ou tipo de evento"
+## 3. Newsletter no Footer
 
-**Arquivos:** `src/components/TravelForm.tsx`, `src/components/Header.tsx`
+Adicionar secao "Receba nossas novidades" acima do footer (como na imagem de referencia):
+- Campo de email + botao "Assinar"
+- Salvar emails em nova tabela `newsletter_subscribers`
 
-## 3. Criar usuário admin no backend
+## 4. Admin: Gerenciar Cadastur
 
-Vou criar uma migration SQL que:
-- Cria um usuário admin na tabela `auth.users` via função `create_user`
-- Atribui o papel `admin` na tabela `user_roles`
-- O email e senha serão fornecidos ao usuário para acesso em `/admin/login`
+Adicionar nova tab "Cadastur" no `AdminDashboard.tsx`:
+- Formulario para editar: numero cadastur, validade, descricao, link verificacao
+- Upload da imagem do certificado
+- Salvar em `site_content` com key `cadastur`
 
-**Método:** Usar uma edge function ou migration para inserir o admin. Como não posso modificar `auth.users` diretamente via migration, vou habilitar auto-confirm temporariamente, criar o usuário via signup no código, e depois atribuir a role. Alternativa mais simples: pedir ao usuário que se cadastre e depois atribuir a role via migration.
+## 5. Admin: Alterar Senha
 
-**Abordagem escolhida:** Vou adicionar uma tela de signup na página de admin login (apenas para o primeiro acesso), e criar uma migration que atribui a role admin ao primeiro usuário que se registrar com um email específico. Ou melhor — vou simplesmente usar uma migration SQL com `auth.users` insert via `supabase_admin` para criar o admin diretamente.
+Adicionar nova tab "Configuracoes" no admin com opcao de alterar senha usando `supabase.auth.updateUser({ password })`.
 
-Na verdade, a forma mais segura: criar o admin via edge function que usa o service role key. Vou criar uma migration que insere a role admin para um user_id específico, e pedir ao usuário para primeiro se registrar em `/admin/login` (adicionando um botão de registro), e depois rodar a migration.
+## 6. WhatsApp Float
 
-**Plano final para admin:**
-1. Adicionar botão "Criar conta" na tela de login admin (signup com email/senha)
-2. Após o signup, o usuário precisa confirmar email — vou habilitar auto-confirm para simplificar
-3. Criar migration que atribui role admin ao usuário pelo email
+Substituir o icone `MessageCircle` do Lucide por um SVG real do logo do WhatsApp em `WhatsAppFloat.tsx`.
 
-## 4. Verificação geral
+## 7. Criar conta admin
 
-- Confirmar que o formulário de viagem insere dados no banco
-- Confirmar que a galeria, eventos e demais seções renderizam corretamente
-- Confirmar que o login admin funciona e redireciona para o dashboard
+- Criar o usuario via signup com email `slturismocg@gmail.com` usando edge function ou migration
+- Auto-confirm ja esta habilitado
+- Atribuir role admin via insert na tabela `user_roles`
+
+Vou precisar perguntar a senha desejada para criar a conta, ou posso usar o fluxo de signup existente + migration para atribuir o role apos o cadastro.
+
+## 8. Database
+
+- Nova tabela `newsletter_subscribers` (id, email, created_at) com RLS: insert publico, select admin
+- Insert na `site_content` com dados default do Cadastur
 
 ---
 
-## Resumo das alterações
+## Arquivos a modificar/criar
 
-| Arquivo | Alteração |
+| Arquivo | Alteracao |
 |---|---|
-| `Header.tsx` | Centralizar nav, renomear link |
-| `TravelForm.tsx` | Título + opção de evento no select |
-| `AdminLogin.tsx` | Adicionar opção de signup |
-| Migration SQL | Atribuir role admin |
-| Auth config | Habilitar auto-confirm |
+| `Cadastur.tsx` | Redesign completo com dados do banco |
+| `Footer.tsx` | Cadastur info + link admin + newsletter |
+| `WhatsAppFloat.tsx` | SVG real do WhatsApp |
+| `AdminDashboard.tsx` | Tabs Cadastur + Configuracoes |
+| `admin/AdminCadastur.tsx` | Novo - CRUD cadastur |
+| `admin/AdminSettings.tsx` | Novo - alterar senha |
+| Migration SQL | Tabela newsletter, insert site_content default, criar admin user |
 

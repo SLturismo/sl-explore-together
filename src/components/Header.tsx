@@ -6,7 +6,7 @@ import logoImg from "@/assets/logo-sl-turismo.jpg";
 const navItems = [
   { label: "Início", href: "#inicio" },
   { label: "Galeria", href: "#galeria" },
-  { label: "Planeje sua Viagem", href: "#planejar" },
+  { label: "Viagens & Eventos", href: "#planejar" },
   { label: "Eventos", href: "#eventos" },
   { label: "Sobre", href: "#sobre" },
 ];
@@ -17,28 +17,33 @@ const Header = () => {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
-        <a href="#inicio" className="flex items-center gap-2">
+        {/* Logo */}
+        <a href="#inicio" className="flex items-center gap-2 shrink-0">
           <img src={logoImg} alt="SL Turismo" className="h-12 md:h-16 w-auto rounded-lg" />
         </a>
 
-        {/* Desktop nav */}
+        {/* Desktop nav - centralizado */}
         <nav className="hidden md:flex items-center gap-6">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors"
+              className="text-sm font-medium text-foreground/80 hover:text-primary transition-colors whitespace-nowrap"
             >
               {item.label}
             </a>
           ))}
+        </nav>
+
+        {/* Botão contato desktop */}
+        <div className="hidden md:block shrink-0">
           <a href="https://wa.me/5567999535548" target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-primary hover:bg-primary/90 gap-1">
               <Phone className="h-3 w-3" />
               Contato
             </Button>
           </a>
-        </nav>
+        </div>
 
         {/* Mobile toggle */}
         <button className="md:hidden text-foreground" onClick={() => setIsOpen(!isOpen)}>

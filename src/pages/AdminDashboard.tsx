@@ -4,11 +4,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Image, Calendar, Mail } from "lucide-react";
+import { LogOut, Image, Calendar, Mail, ShieldCheck, Settings } from "lucide-react";
 import logoImg from "@/assets/logo-sl-turismo.jpg";
 import AdminGallery from "@/components/admin/AdminGallery";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminRequests from "@/components/admin/AdminRequests";
+import AdminCadastur from "@/components/admin/AdminCadastur";
+import AdminSettings from "@/components/admin/AdminSettings";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -79,14 +81,18 @@ const AdminDashboard = () => {
 
       <div className="container mx-auto px-4 py-6">
         <Tabs defaultValue="requests" className="w-full">
-          <TabsList className="w-full justify-start mb-6 bg-card">
+          <TabsList className="w-full justify-start mb-6 bg-card flex-wrap">
             <TabsTrigger value="requests" className="gap-1"><Mail className="h-4 w-4" />Solicitações</TabsTrigger>
             <TabsTrigger value="gallery" className="gap-1"><Image className="h-4 w-4" />Galeria</TabsTrigger>
             <TabsTrigger value="events" className="gap-1"><Calendar className="h-4 w-4" />Eventos</TabsTrigger>
+            <TabsTrigger value="cadastur" className="gap-1"><ShieldCheck className="h-4 w-4" />Cadastur</TabsTrigger>
+            <TabsTrigger value="settings" className="gap-1"><Settings className="h-4 w-4" />Configurações</TabsTrigger>
           </TabsList>
           <TabsContent value="requests"><AdminRequests /></TabsContent>
           <TabsContent value="gallery"><AdminGallery /></TabsContent>
           <TabsContent value="events"><AdminEvents /></TabsContent>
+          <TabsContent value="cadastur"><AdminCadastur /></TabsContent>
+          <TabsContent value="settings"><AdminSettings /></TabsContent>
         </Tabs>
       </div>
     </div>

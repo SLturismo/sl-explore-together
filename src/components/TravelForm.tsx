@@ -49,10 +49,10 @@ const TravelForm = () => {
     <section id="planejar" className="py-20 bg-background">
       <div className="container mx-auto px-4 max-w-2xl">
         <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-          Planeje sua <span className="text-primary">Viagem</span>
+          Planeje sua <span className="text-primary">Viagem ou Evento</span>
         </h2>
         <p className="text-center text-muted-foreground mb-10">
-          Conte-nos seus sonhos e criaremos a viagem perfeita para você
+          Conte-nos seus sonhos e criaremos a viagem ou evento perfeito para você
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-5 bg-card p-6 md:p-8 rounded-xl shadow-lg border border-border">
@@ -73,7 +73,7 @@ const TravelForm = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="destination">Destino desejado *</Label>
-              <Input id="destination" value={form.destination} onChange={(e) => handleChange("destination", e.target.value)} placeholder="Ex: Maldivas, Paris..." maxLength={200} required />
+              <Input id="destination" value={form.destination} onChange={(e) => handleChange("destination", e.target.value)} placeholder="Ex: Maldivas, Paris ou tipo de evento..." maxLength={200} required />
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -96,6 +96,7 @@ const TravelForm = () => {
                 <SelectItem value="casal">Viagem a Dois</SelectItem>
                 <SelectItem value="familia">Viagem em Família</SelectItem>
                 <SelectItem value="lua-de-mel">Lua de Mel</SelectItem>
+                <SelectItem value="evento">Organização de Evento</SelectItem>
               </SelectContent>
             </Select>
           </div>

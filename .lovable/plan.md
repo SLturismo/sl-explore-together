@@ -1,67 +1,72 @@
 
 
-# Plano: Cadastur, WhatsApp, Admin e Footer
+# Plano: Melhorias visuais, ADM completo e fluxo de atendimento
 
-## 1. Redesign da seção Cadastur
+## 1. Correções visuais no Footer
 
-Redesenhar `src/components/Cadastur.tsx` seguindo o estilo das imagens de referência:
-- Layout em duas colunas: certificado (imagem editavel via admin) a esquerda + informacoes a direita
-- Titulo "Credenciais e Seguranca"
-- Numero do Cadastur, descricao, validade e link de verificacao
-- Dados virao da tabela `site_content` (section_key: `cadastur`) para ser editavel no admin
-- Dados default hardcoded enquanto admin nao preencher
+**Newsletter:** Trocar `bg-primary` (rosa) por `bg-foreground` (tom escuro do rodapé) na seção "Receba nossas novidades", mantendo harmonia com o restante do footer.
 
-## 2. Cadastur no Footer
+**Cadastur:** Centralizar a linha "Agência regularizada pelo Ministério do Turismo — Cadastur" usando `justify-center` e `text-center`.
 
-Adicionar no `src/components/Footer.tsx`:
-- Linha com icone ShieldCheck + "Agencia regularizada pelo Ministerio do Turismo - Cadastur N..."
-- Link "Acesso Admin" apontando para `/admin/login`
+**Arquivo:** `src/components/Footer.tsx`
 
-## 3. Newsletter no Footer
+## 2. Fluxo de atendimento melhorado (AdminRequests)
 
-Adicionar secao "Receba nossas novidades" acima do footer (como na imagem de referencia):
-- Campo de email + botao "Assinar"
-- Salvar emails em nova tabela `newsletter_subscribers`
+Expandir os status de atendimento e adicionar mais controle:
 
-## 4. Admin: Gerenciar Cadastur
+- **Novos status:** `pending` (Nova), `seen` (Visualizada), `in_progress` (Em andamento), `contacted` (Contatada), `confirmed` (Confirmada), `cancelled` (Cancelada)
+- **Indicador visual:** Badge colorido para cada status
+- **Filtro por status:** Select no topo para filtrar solicitações
+- **Contadores:** Mostrar quantidade por status (ex: "3 Novas · 2 Em andamento")
+- **Confirmação de recebimento:** Ao abrir uma solicitação "Nova", automaticamente marca como "Visualizada"
 
-Adicionar nova tab "Cadastur" no `AdminDashboard.tsx`:
-- Formulario para editar: numero cadastur, validade, descricao, link verificacao
-- Upload da imagem do certificado
-- Salvar em `site_content` com key `cadastur`
+**Arquivo:** `src/components/admin/AdminRequests.tsx`
 
-## 5. Admin: Alterar Senha
+## 3. Galeria editável no ADM
 
-Adicionar nova tab "Configuracoes" no admin com opcao de alterar senha usando `supabase.auth.updateUser({ password })`.
+Adicionar botão de **editar** em cada imagem da galeria (além do deletar):
+- Modal/formulário inline para alterar título, descrição, categoria e substituir a imagem
+- Reordenar (drag ou botões cima/baixo)
 
-## 6. WhatsApp Float
+**Arquivo:** `src/components/admin/AdminGallery.tsx`
 
-Substituir o icone `MessageCircle` do Lucide por um SVG real do logo do WhatsApp em `WhatsAppFloat.tsx`.
+## 4. Eventos editáveis no ADM
 
-## 7. Criar conta admin
+Adicionar botão de **editar** em cada evento:
+- Modal/formulário para alterar título, descrição, data, local, vagas e imagem
 
-- Criar o usuario via signup com email `slturismocg@gmail.com` usando edge function ou migration
-- Auto-confirm ja esta habilitado
-- Atribuir role admin via insert na tabela `user_roles`
+**Arquivo:** `src/components/admin/AdminEvents.tsx`
 
-Vou precisar perguntar a senha desejada para criar a conta, ou posso usar o fluxo de signup existente + migration para atribuir o role apos o cadastro.
+## 5. Newsletter/Emails no ADM
 
-## 8. Database
+Adicionar nova tab **"Newsletter"** no painel admin:
+- Lista de todos os emails inscritos com data de inscrição
+- Opção de excluir inscritos
+- Contador total de inscritos
 
-- Nova tabela `newsletter_subscribers` (id, email, created_at) com RLS: insert publico, select admin
-- Insert na `site_content` com dados default do Cadastur
+**Arquivos:** `src/pages/AdminDashboard.tsx`, novo `src/components/admin/AdminNewsletter.tsx`
+
+## 6. Edição de conteúdo do site (Hero, Sobre)
+
+Expandir a tab **Configurações** ou criar tab **"Conteúdo"** para editar:
+- Textos do Hero (título, subtítulo)
+- Textos do Sobre (descrição da agência)
+- Salvar em `site_content` com keys `hero` e `about`
+
+**Arquivos:** `src/components/admin/AdminSettings.tsx` ou novo `src/components/admin/AdminContent.tsx`, atualizar `Hero.tsx` e `About.tsx` para buscar dados dinâmicos
 
 ---
 
-## Arquivos a modificar/criar
+## Resumo das alterações
 
-| Arquivo | Alteracao |
+| Arquivo | Alteração |
 |---|---|
-| `Cadastur.tsx` | Redesign completo com dados do banco |
-| `Footer.tsx` | Cadastur info + link admin + newsletter |
-| `WhatsAppFloat.tsx` | SVG real do WhatsApp |
-| `AdminDashboard.tsx` | Tabs Cadastur + Configuracoes |
-| `admin/AdminCadastur.tsx` | Novo - CRUD cadastur |
-| `admin/AdminSettings.tsx` | Novo - alterar senha |
-| Migration SQL | Tabela newsletter, insert site_content default, criar admin user |
+| `Footer.tsx` | Cor newsletter + centralizar Cadastur |
+| `AdminRequests.tsx` | Novos status, filtros, contadores |
+| `AdminGallery.tsx` | Edição de imagens existentes |
+| `AdminEvents.tsx` | Edição de eventos existentes |
+| `AdminDashboard.tsx` | Nova tab Newsletter |
+| `AdminNewsletter.tsx` | Novo - lista de inscritos |
+| `AdminContent.tsx` | Novo - editar textos do site |
+| `Hero.tsx` / `About.tsx` | Buscar conteúdo dinâmico do banco |
 

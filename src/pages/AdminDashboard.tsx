@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { LogOut, Image, Calendar, Mail, ShieldCheck, Settings } from "lucide-react";
+import { LogOut, Image, Calendar, Mail, ShieldCheck, Settings, FileText, Users } from "lucide-react";
 import logoImg from "@/assets/logo-sl-turismo.jpg";
 import AdminGallery from "@/components/admin/AdminGallery";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminRequests from "@/components/admin/AdminRequests";
 import AdminCadastur from "@/components/admin/AdminCadastur";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminNewsletter from "@/components/admin/AdminNewsletter";
+import AdminContent from "@/components/admin/AdminContent";
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -21,16 +23,8 @@ const AdminDashboard = () => {
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/admin/login");
-        return;
-      }
-      const { data: roles } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", session.user.id)
-        .eq("role", "admin");
-
+      if (!session) { navigate("/admin/login"); return; }
+      const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", session.user.id).eq("role", "admin");
       if (!roles || roles.length === 0) {
         toast({ title: "Acesso negado", description: "Você não tem permissão de administrador.", variant: "destructive" });
         await supabase.auth.signOut();
@@ -85,12 +79,16 @@ const AdminDashboard = () => {
             <TabsTrigger value="requests" className="gap-1"><Mail className="h-4 w-4" />Solicitações</TabsTrigger>
             <TabsTrigger value="gallery" className="gap-1"><Image className="h-4 w-4" />Galeria</TabsTrigger>
             <TabsTrigger value="events" className="gap-1"><Calendar className="h-4 w-4" />Eventos</TabsTrigger>
+            <TabsTrigger value="content" className="gap-1"><FileText className="h-4 w-4" />Conteúdo</TabsTrigger>
+            <TabsTrigger value="newsletter" className="gap-1"><Users className="h-4 w-4" />Newsletter</TabsTrigger>
             <TabsTrigger value="cadastur" className="gap-1"><ShieldCheck className="h-4 w-4" />Cadastur</TabsTrigger>
             <TabsTrigger value="settings" className="gap-1"><Settings className="h-4 w-4" />Configurações</TabsTrigger>
           </TabsList>
           <TabsContent value="requests"><AdminRequests /></TabsContent>
           <TabsContent value="gallery"><AdminGallery /></TabsContent>
           <TabsContent value="events"><AdminEvents /></TabsContent>
+          <TabsContent value="content"><AdminContent /></TabsContent>
+          <TabsContent value="newsletter"><AdminNewsletter /></TabsContent>
           <TabsContent value="cadastur"><AdminCadastur /></TabsContent>
           <TabsContent value="settings"><AdminSettings /></TabsContent>
         </Tabs>

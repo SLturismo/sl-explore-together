@@ -32,7 +32,7 @@ const Footer = () => {
   return (
     <>
       {/* Newsletter section */}
-      <section className="bg-primary py-12">
+      <section className="bg-foreground py-12">
         <div className="container mx-auto px-4 text-center">
           <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">
             Receba nossas novidades
@@ -99,8 +99,8 @@ const Footer = () => {
           </div>
 
           {/* Cadastur + Admin link */}
-          <div className="border-t border-primary-foreground/10 mt-8 pt-6 flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2 text-xs text-primary-foreground/50">
+          <div className="border-t border-primary-foreground/10 mt-8 pt-6 flex flex-col md:flex-row items-center justify-center gap-4">
+            <div className="flex items-center gap-2 text-xs text-primary-foreground/50 justify-center text-center">
               <ShieldCheck className="h-4 w-4" />
               Agência regularizada pelo Ministério do Turismo — Cadastur
             </div>

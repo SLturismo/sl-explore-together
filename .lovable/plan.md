@@ -1,72 +1,74 @@
 
 
-# Plano: Melhorias visuais, ADM completo e fluxo de atendimento
+# Plano: Restaurar cor rosa da newsletter + Redesign profissional do Admin
 
-## 1. Correções visuais no Footer
+## 1. Restaurar cor rosa na seção Newsletter
 
-**Newsletter:** Trocar `bg-primary` (rosa) por `bg-foreground` (tom escuro do rodapé) na seção "Receba nossas novidades", mantendo harmonia com o restante do footer.
+Trocar `bg-foreground` de volta para `bg-primary` na seção "Receba nossas novidades" no Footer, como estava antes na imagem de referencia.
 
-**Cadastur:** Centralizar a linha "Agência regularizada pelo Ministério do Turismo — Cadastur" usando `justify-center` e `text-center`.
+**Arquivo:** `src/components/Footer.tsx` (linha 35)
 
-**Arquivo:** `src/components/Footer.tsx`
+## 2. Redesign completo do Painel Admin
 
-## 2. Fluxo de atendimento melhorado (AdminRequests)
+O painel atual usa tabs simples em uma linha, cards basicos e formularios inline sem hierarquia visual. Vou redesenhar seguindo padroes de dashboards profissionais (inspirado em paineis como Vercel, Stripe Dashboard, WordPress Admin):
 
-Expandir os status de atendimento e adicionar mais controle:
+### Layout principal
+- **Sidebar fixa** a esquerda com icones + labels, logo no topo, botao sair no rodape
+- **Area de conteudo** a direita com header contextual (titulo da secao atual + breadcrumb)
+- **Cards com metricas** no topo de cada secao (total de solicitacoes, imagens, eventos, inscritos)
 
-- **Novos status:** `pending` (Nova), `seen` (Visualizada), `in_progress` (Em andamento), `contacted` (Contatada), `confirmed` (Confirmada), `cancelled` (Cancelada)
-- **Indicador visual:** Badge colorido para cada status
-- **Filtro por status:** Select no topo para filtrar solicitações
-- **Contadores:** Mostrar quantidade por status (ex: "3 Novas · 2 Em andamento")
-- **Confirmação de recebimento:** Ao abrir uma solicitação "Nova", automaticamente marca como "Visualizada"
+### Melhorias por secao
 
-**Arquivo:** `src/components/admin/AdminRequests.tsx`
+**Solicitacoes:**
+- Tabela profissional com colunas (Nome, Destino, Data, Status, Acoes) em vez de cards empilhados
+- Modal lateral (sheet/drawer) para detalhes ao clicar em uma solicitacao
+- Botoes de acao claros (WhatsApp, alterar status) no modal
 
-## 3. Galeria editável no ADM
+**Galeria:**
+- Grid visual com preview maior das imagens (aspect-ratio 4:3)
+- Modal de edicao ao clicar no icone de editar (em vez de inline)
+- Drag area melhorada para upload com preview antes de enviar
+- Selecao de categoria via select em vez de input livre
 
-Adicionar botão de **editar** em cada imagem da galeria (além do deletar):
-- Modal/formulário inline para alterar título, descrição, categoria e substituir a imagem
-- Reordenar (drag ou botões cima/baixo)
+**Eventos:**
+- Cards visuais com imagem, titulo e badges (ativo/inativo, vagas)
+- Modal para criar/editar eventos com formulario organizado
+- Upload de imagem integrado no formulario de criacao
 
-**Arquivo:** `src/components/admin/AdminGallery.tsx`
+**Conteudo (Hero/Sobre):**
+- Preview ao vivo do texto ao lado do formulario de edicao
+- Separacao visual clara entre secoes
 
-## 4. Eventos editáveis no ADM
+**Newsletter:**
+- Tabela com paginacao para lista de inscritos
+- Botao exportar CSV
+- Busca por email
 
-Adicionar botão de **editar** em cada evento:
-- Modal/formulário para alterar título, descrição, data, local, vagas e imagem
+**Cadastur:**
+- Layout em 2 colunas: formulario a esquerda, preview do certificado a direita
 
-**Arquivo:** `src/components/admin/AdminEvents.tsx`
+**Configuracoes:**
+- Layout mais limpo com secoes separadas (Senha, Perfil futuro)
 
-## 5. Newsletter/Emails no ADM
+### Design system do admin
+- Fundo: `bg-gray-50` (neutro claro)
+- Sidebar: `bg-white` com borda e sombra sutil
+- Cards: `bg-white` com `shadow-sm` e `rounded-xl`
+- Tipografia: hierarquia clara com `text-2xl` para titulos de secao
+- Botoes primarios com `bg-primary` consistente
+- Espacamento generoso (`p-6`, `gap-6`)
 
-Adicionar nova tab **"Newsletter"** no painel admin:
-- Lista de todos os emails inscritos com data de inscrição
-- Opção de excluir inscritos
-- Contador total de inscritos
+## Arquivos a criar/modificar
 
-**Arquivos:** `src/pages/AdminDashboard.tsx`, novo `src/components/admin/AdminNewsletter.tsx`
-
-## 6. Edição de conteúdo do site (Hero, Sobre)
-
-Expandir a tab **Configurações** ou criar tab **"Conteúdo"** para editar:
-- Textos do Hero (título, subtítulo)
-- Textos do Sobre (descrição da agência)
-- Salvar em `site_content` com keys `hero` e `about`
-
-**Arquivos:** `src/components/admin/AdminSettings.tsx` ou novo `src/components/admin/AdminContent.tsx`, atualizar `Hero.tsx` e `About.tsx` para buscar dados dinâmicos
-
----
-
-## Resumo das alterações
-
-| Arquivo | Alteração |
+| Arquivo | Alteracao |
 |---|---|
-| `Footer.tsx` | Cor newsletter + centralizar Cadastur |
-| `AdminRequests.tsx` | Novos status, filtros, contadores |
-| `AdminGallery.tsx` | Edição de imagens existentes |
-| `AdminEvents.tsx` | Edição de eventos existentes |
-| `AdminDashboard.tsx` | Nova tab Newsletter |
-| `AdminNewsletter.tsx` | Novo - lista de inscritos |
-| `AdminContent.tsx` | Novo - editar textos do site |
-| `Hero.tsx` / `About.tsx` | Buscar conteúdo dinâmico do banco |
+| `Footer.tsx` | Voltar `bg-primary` na newsletter |
+| `AdminDashboard.tsx` | Redesign com sidebar + layout profissional |
+| `AdminRequests.tsx` | Tabela + modal lateral |
+| `AdminGallery.tsx` | Grid melhorado + modal de edicao |
+| `AdminEvents.tsx` | Cards visuais + modal criar/editar |
+| `AdminContent.tsx` | Preview ao vivo |
+| `AdminNewsletter.tsx` | Tabela com busca |
+| `AdminCadastur.tsx` | Layout 2 colunas com preview |
+| `AdminSettings.tsx` | Layout mais limpo |
 

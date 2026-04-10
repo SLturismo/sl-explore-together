@@ -32,7 +32,7 @@ const Footer = () => {
   return (
     <>
       {/* Newsletter section */}
-      <section className="bg-foreground py-12">
+      <section className="bg-primary py-12">
         <div className="container mx-auto px-4 text-center">
           <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">
             Receba nossas novidades

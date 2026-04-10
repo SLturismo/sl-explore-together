@@ -4,9 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Save } from "lucide-react";
+import { Save, Eye } from "lucide-react";
 
 const AdminContent = () => {
   const [heroTitle, setHeroTitle] = useState("Nunca é tarde para");
@@ -50,32 +49,57 @@ const AdminContent = () => {
 
   return (
     <div className="space-y-6">
-      <Card className="border-border">
-        <CardContent className="p-4 space-y-4">
-          <h3 className="font-semibold text-foreground">🏠 Seção Hero (Início)</h3>
+      {/* Hero */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-4">
+          <h3 className="font-display text-lg font-semibold text-foreground">🏠 Seção Hero (Início)</h3>
           <div className="space-y-3">
-            <div className="space-y-1"><Label>Título principal</Label><Input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} /></div>
-            <div className="space-y-1"><Label>Destaque (linha colorida)</Label><Input value={heroHighlight} onChange={(e) => setHeroHighlight(e.target.value)} /></div>
-            <div className="space-y-1"><Label>Subtítulo</Label><Textarea value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} rows={2} /></div>
+            <div className="space-y-1.5"><Label>Título principal</Label><Input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Destaque (linha colorida)</Label><Input value={heroHighlight} onChange={(e) => setHeroHighlight(e.target.value)} /></div>
+            <div className="space-y-1.5"><Label>Subtítulo</Label><Textarea value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} rows={2} /></div>
           </div>
-          <Button onClick={() => save("hero", { title: heroTitle, highlight: heroHighlight, subtitle: heroSubtitle })} disabled={saving} className="gap-1">
+          <Button onClick={() => save("hero", { title: heroTitle, highlight: heroHighlight, subtitle: heroSubtitle })} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" />{saving ? "Salvando..." : "Salvar Hero"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
 
-      <Card className="border-border">
-        <CardContent className="p-4 space-y-4">
-          <h3 className="font-semibold text-foreground">ℹ️ Seção Sobre</h3>
-          <div className="space-y-3">
-            <div className="space-y-1"><Label>Parágrafo 1</Label><Textarea value={aboutText1} onChange={(e) => setAboutText1(e.target.value)} rows={3} /></div>
-            <div className="space-y-1"><Label>Parágrafo 2</Label><Textarea value={aboutText2} onChange={(e) => setAboutText2(e.target.value)} rows={3} /></div>
+        {/* Preview */}
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+            <Eye className="h-4 w-4" /> Preview
           </div>
-          <Button onClick={() => save("about", { text1: aboutText1, text2: aboutText2 })} disabled={saving} className="gap-1">
+          <div className="bg-muted/30 rounded-lg p-6 text-center space-y-2">
+            <p className="font-display text-xl text-foreground">{heroTitle}</p>
+            <p className="font-display text-2xl font-bold text-primary">{heroHighlight}</p>
+            <p className="text-sm text-muted-foreground">{heroSubtitle}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* About */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-4">
+          <h3 className="font-display text-lg font-semibold text-foreground">ℹ️ Seção Sobre</h3>
+          <div className="space-y-3">
+            <div className="space-y-1.5"><Label>Parágrafo 1</Label><Textarea value={aboutText1} onChange={(e) => setAboutText1(e.target.value)} rows={3} /></div>
+            <div className="space-y-1.5"><Label>Parágrafo 2</Label><Textarea value={aboutText2} onChange={(e) => setAboutText2(e.target.value)} rows={3} /></div>
+          </div>
+          <Button onClick={() => save("about", { text1: aboutText1, text2: aboutText2 })} disabled={saving} className="gap-2">
             <Save className="h-4 w-4" />{saving ? "Salvando..." : "Salvar Sobre"}
           </Button>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Preview */}
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
+            <Eye className="h-4 w-4" /> Preview
+          </div>
+          <div className="bg-muted/30 rounded-lg p-6 space-y-3 text-sm text-foreground">
+            <p>{aboutText1 || "Parágrafo 1..."}</p>
+            <p>{aboutText2 || "Parágrafo 2..."}</p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

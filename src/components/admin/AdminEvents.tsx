@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Pencil, Check, X } from "lucide-react";
+import { Trash2, Plus, Pencil, CalendarDays, MapPin, Users, Upload } from "lucide-react";
 
 type Event = {
   id: string;
@@ -20,11 +21,14 @@ type Event = {
   active: boolean | null;
 };
 
+const emptyForm = { title: "", description: "", event_date: "", location: "", spots: "" };
+
 const AdminEvents = () => {
   const [events, setEvents] = useState<Event[]>([]);
-  const [form, setForm] = useState({ title: "", description: "", event_date: "", location: "", spots: "" });
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ title: "", description: "", event_date: "", location: "", spots: "" });
+  const [showCreate, setShowCreate] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [editModal, setEditModal] = useState<Event | null>(null);
+  const [editForm, setEditForm] = useState(emptyForm);
   const { toast } = useToast();
 
   const fetchEvents = async () => {
@@ -47,7 +51,8 @@ const AdminEvents = () => {
       toast({ title: "Erro ao criar evento", variant: "destructive" });
     } else {
       toast({ title: "Evento criado!" });
-      setForm({ title: "", description: "", event_date: "", location: "", spots: "" });
+      setForm(emptyForm);
+      setShowCreate(false);
       fetchEvents();
     }
   };
@@ -63,8 +68,8 @@ const AdminEvents = () => {
     toast({ title: "Evento removido" });
   };
 
-  const startEdit = (event: Event) => {
-    setEditingId(event.id);
+  const openEdit = (event: Event) => {
+    setEditModal(event);
     setEditForm({
       title: event.title,
       description: event.description || "",
@@ -74,26 +79,24 @@ const AdminEvents = () => {
     });
   };
 
-  const saveEdit = async (id: string) => {
+  const saveEdit = async () => {
+    if (!editModal) return;
     const { error } = await supabase.from("events").update({
       title: editForm.title,
       description: editForm.description || null,
       event_date: editForm.event_date || null,
       location: editForm.location || null,
       spots: editForm.spots ? parseInt(editForm.spots) : null,
-    }).eq("id", id);
+    }).eq("id", editModal.id);
     if (error) {
       toast({ title: "Erro ao atualizar", variant: "destructive" });
     } else {
-      setEvents((prev) => prev.map((e) => e.id === id ? {
-        ...e,
-        title: editForm.title,
-        description: editForm.description || null,
-        event_date: editForm.event_date || null,
-        location: editForm.location || null,
+      setEvents((prev) => prev.map((e) => e.id === editModal.id ? {
+        ...e, title: editForm.title, description: editForm.description || null,
+        event_date: editForm.event_date || null, location: editForm.location || null,
         spots: editForm.spots ? parseInt(editForm.spots) : null,
       } : e));
-      setEditingId(null);
+      setEditModal(null);
       toast({ title: "Evento atualizado!" });
     }
   };
@@ -106,69 +109,125 @@ const AdminEvents = () => {
     const { error } = await supabase.from("events").update({ image_url: urlData.publicUrl }).eq("id", id);
     if (!error) {
       setEvents((prev) => prev.map((e) => e.id === id ? { ...e, image_url: urlData.publicUrl } : e));
-      toast({ title: "Imagem do evento atualizada!" });
+      if (editModal?.id === id) setEditModal((prev) => prev ? { ...prev, image_url: urlData.publicUrl } : null);
+      toast({ title: "Imagem atualizada!" });
     }
   };
 
   return (
     <div className="space-y-6">
-      <Card className="border-border">
-        <CardContent className="p-4 space-y-4">
-          <h3 className="font-semibold text-foreground flex items-center gap-2"><Plus className="h-4 w-4" /> Novo Evento</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div className="space-y-1"><Label>Título *</Label><Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} /></div>
-            <div className="space-y-1"><Label>Data</Label><Input value={form.event_date} onChange={(e) => setForm((p) => ({ ...p, event_date: e.target.value }))} placeholder="Ex: Agosto 2026" /></div>
-            <div className="space-y-1"><Label>Local</Label><Input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} /></div>
-            <div className="space-y-1"><Label>Vagas</Label><Input type="number" value={form.spots} onChange={(e) => setForm((p) => ({ ...p, spots: e.target.value }))} /></div>
-          </div>
-          <div className="space-y-1"><Label>Descrição</Label><Textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} /></div>
-          <Button onClick={handleCreate} className="bg-primary hover:bg-primary/90">Criar Evento</Button>
-        </CardContent>
-      </Card>
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-bold text-foreground">{events.length} Eventos</h2>
+        <Button onClick={() => setShowCreate(true)} className="gap-2">
+          <Plus className="h-4 w-4" /> Novo Evento
+        </Button>
+      </div>
 
-      <div className="space-y-3">
+      {/* Event cards grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {events.map((event) => (
-          <Card key={event.id} className="border-border">
-            <CardContent className="p-4">
-              {editingId === event.id ? (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1"><Label>Título</Label><Input value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} /></div>
-                    <div className="space-y-1"><Label>Data</Label><Input value={editForm.event_date} onChange={(e) => setEditForm((p) => ({ ...p, event_date: e.target.value }))} /></div>
-                    <div className="space-y-1"><Label>Local</Label><Input value={editForm.location} onChange={(e) => setEditForm((p) => ({ ...p, location: e.target.value }))} /></div>
-                    <div className="space-y-1"><Label>Vagas</Label><Input type="number" value={editForm.spots} onChange={(e) => setEditForm((p) => ({ ...p, spots: e.target.value }))} /></div>
-                  </div>
-                  <div className="space-y-1"><Label>Descrição</Label><Textarea value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} rows={3} /></div>
-                  <label className="block text-xs text-muted-foreground cursor-pointer underline">
-                    {event.image_url ? "Substituir imagem" : "Adicionar imagem"}
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadEventImage(event.id, e.target.files[0])} />
-                  </label>
-                  {event.image_url && <img src={event.image_url} alt="" className="h-20 rounded object-cover" />}
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={() => saveEdit(event.id)} className="gap-1"><Check className="h-3 w-3" />Salvar</Button>
-                    <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}><X className="h-3 w-3" />Cancelar</Button>
-                  </div>
+          <div key={event.id} className="bg-card rounded-xl border border-border overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {event.image_url ? (
+              <div className="aspect-video overflow-hidden">
+                <img src={event.image_url} alt={event.title} className="w-full h-full object-cover" />
+              </div>
+            ) : (
+              <div className="aspect-video bg-muted flex items-center justify-center">
+                <CalendarDays className="h-10 w-10 text-muted-foreground/30" />
+              </div>
+            )}
+            <div className="p-4 space-y-3">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="font-display font-semibold text-foreground line-clamp-1">{event.title}</h3>
+                <Badge variant={event.active ? "default" : "outline"} className="shrink-0 text-xs">
+                  {event.active ? "Ativo" : "Inativo"}
+                </Badge>
+              </div>
+              {event.description && <p className="text-sm text-muted-foreground line-clamp-2">{event.description}</p>}
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                {event.location && (
+                  <span className="flex items-center gap-1"><MapPin className="h-3 w-3" />{event.location}</span>
+                )}
+                {event.event_date && (
+                  <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" />{event.event_date}</span>
+                )}
+                {event.spots !== null && (
+                  <span className="flex items-center gap-1"><Users className="h-3 w-3" />{event.spots} vagas</span>
+                )}
+              </div>
+              <div className="flex items-center justify-between pt-2 border-t border-border">
+                <div className="flex items-center gap-2">
+                  <Switch checked={event.active ?? false} onCheckedChange={() => toggleActive(event.id, event.active ?? false)} />
+                  <span className="text-xs text-muted-foreground">{event.active ? "Ativo" : "Inativo"}</span>
                 </div>
-              ) : (
-                <div className="flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0 flex items-center gap-3">
-                    {event.image_url && <img src={event.image_url} alt="" className="h-12 w-12 rounded object-cover shrink-0" />}
-                    <div>
-                      <h4 className="font-semibold text-foreground truncate">{event.title}</h4>
-                      <p className="text-sm text-muted-foreground">{event.location} · {event.event_date} · {event.spots} vagas</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="icon" onClick={() => startEdit(event)}><Pencil className="h-4 w-4" /></Button>
-                    <Switch checked={event.active ?? false} onCheckedChange={() => toggleActive(event.id, event.active ?? false)} />
-                    <Button variant="destructive" size="icon" onClick={() => handleDelete(event.id)}><Trash2 className="h-4 w-4" /></Button>
-                  </div>
+                <div className="flex gap-1">
+                  <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(event)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => handleDelete(event.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
+
+      {events.length === 0 && (
+        <div className="text-center py-16 text-muted-foreground">
+          <CalendarDays className="h-12 w-12 mx-auto mb-3 opacity-30" />
+          <p>Nenhum evento cadastrado.</p>
+        </div>
+      )}
+
+      {/* Create Modal */}
+      <Dialog open={showCreate} onOpenChange={setShowCreate}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Novo Evento</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-1.5"><Label>Título *</Label><Input value={form.title} onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))} /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>Data</Label><Input value={form.event_date} onChange={(e) => setForm((p) => ({ ...p, event_date: e.target.value }))} placeholder="Ex: Agosto 2026" /></div>
+              <div className="space-y-1.5"><Label>Local</Label><Input value={form.location} onChange={(e) => setForm((p) => ({ ...p, location: e.target.value }))} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Vagas</Label><Input type="number" value={form.spots} onChange={(e) => setForm((p) => ({ ...p, spots: e.target.value }))} /></div>
+            <div className="space-y-1.5"><Label>Descrição</Label><Textarea value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} rows={3} /></div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
+              <Button onClick={handleCreate}>Criar Evento</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Modal */}
+      <Dialog open={!!editModal} onOpenChange={(open) => !open && setEditModal(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle className="font-display">Editar Evento</DialogTitle></DialogHeader>
+          {editModal && (
+            <div className="space-y-4">
+              {editModal.image_url && <img src={editModal.image_url} alt="" className="w-full h-32 object-cover rounded-lg" />}
+              <div className="space-y-1.5"><Label>Título</Label><Input value={editForm.title} onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5"><Label>Data</Label><Input value={editForm.event_date} onChange={(e) => setEditForm((p) => ({ ...p, event_date: e.target.value }))} /></div>
+                <div className="space-y-1.5"><Label>Local</Label><Input value={editForm.location} onChange={(e) => setEditForm((p) => ({ ...p, location: e.target.value }))} /></div>
+              </div>
+              <div className="space-y-1.5"><Label>Vagas</Label><Input type="number" value={editForm.spots} onChange={(e) => setEditForm((p) => ({ ...p, spots: e.target.value }))} /></div>
+              <div className="space-y-1.5"><Label>Descrição</Label><Textarea value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} rows={3} /></div>
+              <label className="flex items-center gap-2 text-sm text-primary cursor-pointer underline font-medium">
+                <Upload className="h-4 w-4" />
+                {editModal.image_url ? "Substituir imagem" : "Adicionar imagem"}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadEventImage(editModal.id, e.target.files[0])} />
+              </label>
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setEditModal(null)}>Cancelar</Button>
+                <Button onClick={saveEdit}>Salvar</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

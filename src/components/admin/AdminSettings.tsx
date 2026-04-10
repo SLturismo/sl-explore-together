@@ -3,9 +3,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Shield } from "lucide-react";
 
 const AdminSettings = () => {
   const [newPassword, setNewPassword] = useState("");
@@ -36,27 +35,37 @@ const AdminSettings = () => {
   };
 
   return (
-    <Card className="border-border max-w-md">
-      <CardContent className="p-6">
-        <h3 className="font-semibold text-foreground text-lg flex items-center gap-2 mb-4">
-          <KeyRound className="h-5 w-5" />
+    <div className="max-w-lg space-y-6">
+      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-6">
+          <KeyRound className="h-5 w-5 text-primary" />
           Alterar Senha
         </h3>
         <form onSubmit={handleChangePassword} className="space-y-4">
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Nova Senha</Label>
             <Input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required placeholder="Mínimo 6 caracteres" />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label>Confirmar Nova Senha</Label>
             <Input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required placeholder="Repita a nova senha" />
           </div>
-          <Button type="submit" disabled={loading}>
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? "Alterando..." : "Alterar Senha"}
           </Button>
         </form>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-3">
+          <Shield className="h-5 w-5 text-primary" />
+          Segurança
+        </h3>
+        <p className="text-sm text-muted-foreground">
+          Mantenha sua senha segura e não a compartilhe. Use no mínimo 6 caracteres com letras e números.
+        </p>
+      </div>
+    </div>
   );
 };
 

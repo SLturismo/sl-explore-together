@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import galleryBeach from "@/assets/gallery-beach.jpg";
 import galleryInternational from "@/assets/gallery-international.jpg";
 import gallerySolo from "@/assets/gallery-solo.jpg";
@@ -17,31 +18,34 @@ const images = [
 
 const Gallery = () => {
   const [active, setActive] = useState("Todas");
+  const [titlePrefix, setTitlePrefix] = useState("Galeria de");
+  const [titleHighlight, setTitleHighlight] = useState("Viagens");
+  const [subtitle, setSubtitle] = useState("Inspire-se com destinos incríveis escolhidos por mulheres como você");
+
+  useEffect(() => {
+    supabase.from("site_content").select("content").eq("section_key", "gallery").maybeSingle().then(({ data }) => {
+      if (data?.content) {
+        const c = data.content as any;
+        if (c.title_prefix) setTitlePrefix(c.title_prefix);
+        if (c.title_highlight) setTitleHighlight(c.title_highlight);
+        if (c.subtitle) setSubtitle(c.subtitle);
+      }
+    });
+  }, []);
+
   const filtered = active === "Todas" ? images : images.filter((i) => i.category === active);
 
   return (
     <section id="galeria" className="py-20 bg-rose-light">
       <div className="container mx-auto px-4">
         <h2 className="font-display text-3xl md:text-4xl font-bold text-center text-foreground mb-4">
-          Galeria de <span className="text-primary">Viagens</span>
+          {titlePrefix} <span className="text-primary">{titleHighlight}</span>
         </h2>
-        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">
-          Inspire-se com destinos incríveis escolhidos por mulheres como você
-        </p>
+        <p className="text-center text-muted-foreground mb-8 max-w-xl mx-auto">{subtitle}</p>
 
         <div className="flex flex-wrap justify-center gap-2 mb-10">
           {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActive(cat)}
-              className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                active === cat
-                  ? "bg-primary text-primary-foreground shadow-md"
-                  : "bg-card text-muted-foreground hover:bg-primary/10"
-              }`}
-            >
-              {cat}
-            </button>
+            <button key={cat} onClick={() => setActive(cat)} className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${active === cat ? "bg-primary text-primary-foreground shadow-md" : "bg-card text-muted-foreground hover:bg-primary/10"}`}>{cat}</button>
           ))}
         </div>
 

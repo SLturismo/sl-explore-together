@@ -6,6 +6,7 @@ const Hero = () => {
   const [title, setTitle] = useState("Nunca é tarde para");
   const [highlight, setHighlight] = useState("viver seus sonhos");
   const [subtitle, setSubtitle] = useState("Viagens exclusivas para mulheres que buscam liberdade, segurança e experiências inesquecíveis.");
+  const [buttonText, setButtonText] = useState("✈️ Planejar minha viagem");
 
   useEffect(() => {
     supabase.from("site_content").select("content").eq("section_key", "hero").maybeSingle().then(({ data }) => {
@@ -14,6 +15,7 @@ const Hero = () => {
         if (c.title) setTitle(c.title);
         if (c.highlight) setHighlight(c.highlight);
         if (c.subtitle) setSubtitle(c.subtitle);
+        if (c.button_text) setButtonText(c.button_text);
       }
     });
   }, []);
@@ -32,12 +34,8 @@ const Hero = () => {
         <p className="text-lg md:text-xl text-primary-foreground/90 max-w-2xl mx-auto mb-8 font-body opacity-0 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           {subtitle}
         </p>
-        <a
-          href="#planejar"
-          className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:scale-105 shadow-lg opacity-0 animate-fade-in"
-          style={{ animationDelay: "0.4s" }}
-        >
-          ✈️ Planejar minha viagem
+        <a href="#planejar" className="inline-flex items-center gap-2 bg-primary hover:bg-primary/90 text-primary-foreground px-8 py-4 rounded-lg text-lg font-semibold transition-all hover:scale-105 shadow-lg opacity-0 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+          {buttonText}
         </a>
       </div>
     </section>

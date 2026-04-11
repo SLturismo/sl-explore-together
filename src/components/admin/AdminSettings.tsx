@@ -28,7 +28,10 @@ const AdminSettings = () => {
     if (error) {
       toast({ title: "Erro ao alterar senha", description: error.message, variant: "destructive" });
     } else {
-      toast({ title: "Senha alterada com sucesso! ✅" });
+      toast({
+        title: "Senha alterada com sucesso! ✅",
+        description: "Na próxima vez, use esta senha na tela de login do painel.",
+      });
       setNewPassword("");
       setConfirmPassword("");
     }

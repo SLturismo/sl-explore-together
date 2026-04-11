@@ -5,101 +5,188 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Save, Eye } from "lucide-react";
+import { Save, Loader2 } from "lucide-react";
+
+type SectionData = Record<string, string>;
 
 const AdminContent = () => {
-  const [heroTitle, setHeroTitle] = useState("Nunca é tarde para");
-  const [heroHighlight, setHeroHighlight] = useState("viver seus sonhos");
-  const [heroSubtitle, setHeroSubtitle] = useState("Viagens exclusivas para mulheres que buscam liberdade, segurança e experiências inesquecíveis.");
-  const [aboutText1, setAboutText1] = useState("");
-  const [aboutText2, setAboutText2] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [sections, setSections] = useState<Record<string, SectionData>>({
+    hero: { title: "Nunca é tarde para", highlight: "viver seus sonhos", subtitle: "Viagens exclusivas para mulheres que buscam liberdade, segurança e experiências inesquecíveis.", button_text: "✈️ Planejar minha viagem" },
+    about: { title_prefix: "Sobre a", title_highlight: "SL Turismo", text1: "", text2: "", diff1_title: "Feito por Mulheres", diff1_desc: "Entendemos suas necessidades e criamos experiências que fazem sentido para você.", diff2_title: "Segurança em Primeiro Lugar", diff2_desc: "Cada detalhe é planejado para que você viaje com tranquilidade e confiança.", diff3_title: "Experiências Únicas", diff3_desc: "Roteiros personalizados que vão além do turismo convencional.", diff4_title: "Comunidade", diff4_desc: "Conecte-se com mulheres incríveis que compartilham a paixão por viajar." },
+    gallery: { title_prefix: "Galeria de", title_highlight: "Viagens", subtitle: "Inspire-se com destinos incríveis escolhidos por mulheres como você" },
+    travel_form: { title_prefix: "Planeje sua", title_highlight: "Viagem ou Evento", subtitle: "Conte-nos seus sonhos e criaremos a viagem ou evento perfeito para você", button_text: "✈️ Enviar Solicitação" },
+    events: { title_prefix: "Eventos &", title_highlight: "Experiências", subtitle: "Viagens em grupo e tours exclusivos para mulheres que querem explorar o mundo juntas" },
+    newsletter: { title: "Receba nossas novidades", subtitle: "Fique por dentro dos próximos destinos e eventos exclusivos", button_text: "Assinar" },
+    footer: { description: "Viagens exclusivas e eventos para quem sonha em explorar o mundo com liberdade e segurança.", phone: "(67) 99953-5548", phone_link: "5567999535548", email: "contato@slturismo.com.br", city: "Campo Grande - MS", nav1: "Início", nav2: "Galeria", nav3: "Viagens & Eventos", nav4: "Eventos", nav5: "Sobre" },
+    header: { nav1: "Início", nav2: "Galeria", nav3: "Viagens & Eventos", nav4: "Eventos", nav5: "Sobre", contact_button: "Contato" },
+  });
+  const [saving, setSaving] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase.from("site_content").select("*").in("section_key", ["hero", "about"]);
-      data?.forEach((row) => {
-        const c = row.content as any;
-        if (row.section_key === "hero") {
-          setHeroTitle(c.title || "Nunca é tarde para");
-          setHeroHighlight(c.highlight || "viver seus sonhos");
-          setHeroSubtitle(c.subtitle || "");
-        }
-        if (row.section_key === "about") {
-          setAboutText1(c.text1 || "");
-          setAboutText2(c.text2 || "");
-        }
-      });
+      const keys = Object.keys(sections);
+      const { data } = await supabase.from("site_content").select("*").in("section_key", keys);
+      if (data) {
+        const updated = { ...sections };
+        data.forEach((row) => {
+          const c = row.content as any;
+          if (updated[row.section_key]) {
+            updated[row.section_key] = { ...updated[row.section_key], ...c };
+          }
+        });
+        setSections(updated);
+      }
+      setLoading(false);
     };
     load();
   }, []);
 
-  const save = async (key: string, content: Record<string, string>) => {
-    setSaving(true);
+  const save = async (key: string) => {
+    setSaving(key);
+    const content = sections[key];
     const { data: existing } = await supabase.from("site_content").select("id").eq("section_key", key).maybeSingle();
     if (existing) {
       await supabase.from("site_content").update({ content, updated_at: new Date().toISOString() }).eq("section_key", key);
     } else {
       await supabase.from("site_content").insert({ section_key: key, content });
     }
-    setSaving(false);
-    toast({ title: "Conteúdo salvo!" });
+    setSaving(null);
+    toast({ title: "Conteúdo salvo com sucesso!" });
   };
 
-  return (
-    <div className="space-y-6">
-      {/* Hero */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-4">
-          <h3 className="font-display text-lg font-semibold text-foreground">🏠 Seção Hero (Início)</h3>
-          <div className="space-y-3">
-            <div className="space-y-1.5"><Label>Título principal</Label><Input value={heroTitle} onChange={(e) => setHeroTitle(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Destaque (linha colorida)</Label><Input value={heroHighlight} onChange={(e) => setHeroHighlight(e.target.value)} /></div>
-            <div className="space-y-1.5"><Label>Subtítulo</Label><Textarea value={heroSubtitle} onChange={(e) => setHeroSubtitle(e.target.value)} rows={2} /></div>
-          </div>
-          <Button onClick={() => save("hero", { title: heroTitle, highlight: heroHighlight, subtitle: heroSubtitle })} disabled={saving} className="gap-2">
-            <Save className="h-4 w-4" />{saving ? "Salvando..." : "Salvar Hero"}
-          </Button>
-        </div>
+  const updateField = (section: string, field: string, value: string) => {
+    setSections((prev) => ({
+      ...prev,
+      [section]: { ...prev[section], [field]: value },
+    }));
+  };
 
-        {/* Preview */}
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-            <Eye className="h-4 w-4" /> Preview
-          </div>
-          <div className="bg-muted/30 rounded-lg p-6 text-center space-y-2">
-            <p className="font-display text-xl text-foreground">{heroTitle}</p>
-            <p className="font-display text-2xl font-bold text-primary">{heroHighlight}</p>
-            <p className="text-sm text-muted-foreground">{heroSubtitle}</p>
-          </div>
-        </div>
+  if (loading) return <p className="text-muted-foreground">Carregando conteúdo...</p>;
+
+  const Field = ({ section, field, label, multiline }: { section: string; field: string; label: string; multiline?: boolean }) => (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {multiline ? (
+        <Textarea value={sections[section]?.[field] || ""} onChange={(e) => updateField(section, field, e.target.value)} rows={3} className="bg-background" />
+      ) : (
+        <Input value={sections[section]?.[field] || ""} onChange={(e) => updateField(section, field, e.target.value)} className="bg-background" />
+      )}
+    </div>
+  );
+
+  const SectionCard = ({ sectionKey, title, emoji, children }: { sectionKey: string; title: string; emoji: string; children: React.ReactNode }) => (
+    <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-display text-base font-semibold text-foreground">{emoji} {title}</h3>
+        <Button size="sm" onClick={() => save(sectionKey)} disabled={saving === sectionKey} className="gap-1.5">
+          {saving === sectionKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+          {saving === sectionKey ? "Salvando..." : "Salvar"}
+        </Button>
       </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      <p className="text-sm text-muted-foreground">Edite todos os textos exibidos no site. Clique em "Salvar" em cada seção após alterar.</p>
+
+      {/* Header */}
+      <SectionCard sectionKey="header" title="Menu de Navegação" emoji="🧭">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Field section="header" field="nav1" label="Link 1" />
+          <Field section="header" field="nav2" label="Link 2" />
+          <Field section="header" field="nav3" label="Link 3" />
+          <Field section="header" field="nav4" label="Link 4" />
+          <Field section="header" field="nav5" label="Link 5" />
+          <Field section="header" field="contact_button" label="Botão contato" />
+        </div>
+      </SectionCard>
+
+      {/* Hero */}
+      <SectionCard sectionKey="hero" title="Início (Hero)" emoji="🏠">
+        <Field section="hero" field="title" label="Título principal" />
+        <Field section="hero" field="highlight" label="Destaque (linha colorida)" />
+        <Field section="hero" field="subtitle" label="Subtítulo" multiline />
+        <Field section="hero" field="button_text" label="Texto do botão" />
+      </SectionCard>
+
+      {/* Gallery */}
+      <SectionCard sectionKey="gallery" title="Galeria" emoji="📸">
+        <div className="grid grid-cols-2 gap-3">
+          <Field section="gallery" field="title_prefix" label="Título (parte 1)" />
+          <Field section="gallery" field="title_highlight" label="Título (destaque)" />
+        </div>
+        <Field section="gallery" field="subtitle" label="Subtítulo" multiline />
+      </SectionCard>
+
+      {/* Travel Form */}
+      <SectionCard sectionKey="travel_form" title="Formulário de Viagem" emoji="✈️">
+        <div className="grid grid-cols-2 gap-3">
+          <Field section="travel_form" field="title_prefix" label="Título (parte 1)" />
+          <Field section="travel_form" field="title_highlight" label="Título (destaque)" />
+        </div>
+        <Field section="travel_form" field="subtitle" label="Subtítulo" multiline />
+        <Field section="travel_form" field="button_text" label="Texto do botão" />
+      </SectionCard>
+
+      {/* Events */}
+      <SectionCard sectionKey="events" title="Eventos & Experiências" emoji="🎪">
+        <div className="grid grid-cols-2 gap-3">
+          <Field section="events" field="title_prefix" label="Título (parte 1)" />
+          <Field section="events" field="title_highlight" label="Título (destaque)" />
+        </div>
+        <Field section="events" field="subtitle" label="Subtítulo" multiline />
+      </SectionCard>
 
       {/* About */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-4">
-          <h3 className="font-display text-lg font-semibold text-foreground">ℹ️ Seção Sobre</h3>
-          <div className="space-y-3">
-            <div className="space-y-1.5"><Label>Parágrafo 1</Label><Textarea value={aboutText1} onChange={(e) => setAboutText1(e.target.value)} rows={3} /></div>
-            <div className="space-y-1.5"><Label>Parágrafo 2</Label><Textarea value={aboutText2} onChange={(e) => setAboutText2(e.target.value)} rows={3} /></div>
-          </div>
-          <Button onClick={() => save("about", { text1: aboutText1, text2: aboutText2 })} disabled={saving} className="gap-2">
-            <Save className="h-4 w-4" />{saving ? "Salvando..." : "Salvar Sobre"}
-          </Button>
+      <SectionCard sectionKey="about" title="Sobre a SL Turismo" emoji="ℹ️">
+        <div className="grid grid-cols-2 gap-3">
+          <Field section="about" field="title_prefix" label="Título (parte 1)" />
+          <Field section="about" field="title_highlight" label="Título (destaque)" />
         </div>
+        <Field section="about" field="text1" label="Parágrafo 1" multiline />
+        <Field section="about" field="text2" label="Parágrafo 2" multiline />
+        <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Diferenciais</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field section="about" field="diff1_title" label="Diferencial 1 - Título" />
+          <Field section="about" field="diff1_desc" label="Diferencial 1 - Descrição" />
+          <Field section="about" field="diff2_title" label="Diferencial 2 - Título" />
+          <Field section="about" field="diff2_desc" label="Diferencial 2 - Descrição" />
+          <Field section="about" field="diff3_title" label="Diferencial 3 - Título" />
+          <Field section="about" field="diff3_desc" label="Diferencial 3 - Descrição" />
+          <Field section="about" field="diff4_title" label="Diferencial 4 - Título" />
+          <Field section="about" field="diff4_desc" label="Diferencial 4 - Descrição" />
+        </div>
+      </SectionCard>
 
-        {/* Preview */}
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-          <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
-            <Eye className="h-4 w-4" /> Preview
-          </div>
-          <div className="bg-muted/30 rounded-lg p-6 space-y-3 text-sm text-foreground">
-            <p>{aboutText1 || "Parágrafo 1..."}</p>
-            <p>{aboutText2 || "Parágrafo 2..."}</p>
-          </div>
+      {/* Newsletter */}
+      <SectionCard sectionKey="newsletter" title="Newsletter" emoji="📬">
+        <Field section="newsletter" field="title" label="Título" />
+        <Field section="newsletter" field="subtitle" label="Subtítulo" />
+        <Field section="newsletter" field="button_text" label="Texto do botão" />
+      </SectionCard>
+
+      {/* Footer */}
+      <SectionCard sectionKey="footer" title="Rodapé" emoji="📍">
+        <Field section="footer" field="description" label="Descrição da empresa" multiline />
+        <div className="grid grid-cols-2 gap-3">
+          <Field section="footer" field="phone" label="Telefone (exibição)" />
+          <Field section="footer" field="phone_link" label="Telefone (WhatsApp, só números)" />
+          <Field section="footer" field="email" label="E-mail" />
+          <Field section="footer" field="city" label="Cidade" />
         </div>
-      </div>
+        <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Links de navegação do rodapé</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <Field section="footer" field="nav1" label="Link 1" />
+          <Field section="footer" field="nav2" label="Link 2" />
+          <Field section="footer" field="nav3" label="Link 3" />
+          <Field section="footer" field="nav4" label="Link 4" />
+          <Field section="footer" field="nav5" label="Link 5" />
+        </div>
+      </SectionCard>
     </div>
   );
 };

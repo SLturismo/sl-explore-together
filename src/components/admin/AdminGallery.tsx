@@ -19,7 +19,19 @@ type GalleryImage = {
   display_order: number | null;
 };
 
-const categories = ["Praias", "Montanhas", "Cidades", "Resorts", "Aventura", "Cultura", "Gastronomia", "Outros"];
+const categories = [
+  "Praias",
+  "Montanhas",
+  "Cidades",
+  "Resorts",
+  "Internacional",
+  "Solo",
+  "Grupos",
+  "Aventura",
+  "Cultura",
+  "Gastronomia",
+  "Outros",
+];
 
 const emptyForm = { category: "Praias", title: "", description: "" };
 

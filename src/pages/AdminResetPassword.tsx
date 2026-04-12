@@ -19,20 +19,67 @@ const AdminResetPassword = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const sync = async () => {
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      setLoadingSession(false);
+    let cancelled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    const finishLoading = () => {
+      if (!cancelled) setLoadingSession(false);
     };
-    sync();
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, next) => {
+      if (cancelled) return;
       setSession(next);
+      finishLoading();
     });
 
-    return () => subscription.unsubscribe();
+    const run = async () => {
+      const hash = typeof window !== "undefined" ? window.location.hash : "";
+      const search = typeof window !== "undefined" ? window.location.search : "";
+      const code = new URLSearchParams(search).get("code");
+
+      if (code && typeof (supabase.auth as { exchangeCodeForSession?: (c: string) => Promise<unknown> }).exchangeCodeForSession === "function") {
+        try {
+          await (supabase.auth as { exchangeCodeForSession: (c: string) => Promise<{ error?: { message: string } }> }).exchangeCodeForSession(code);
+        } catch {
+          /* fluxo continua com getSession */
+        }
+      }
+
+      const { data } = await supabase.auth.getSession();
+      if (cancelled) return;
+      setSession(data.session);
+
+      const waitForTokens =
+        !data.session &&
+        (hash.includes("access_token") || hash.includes("type=recovery") || Boolean(code));
+
+      if (data.session) {
+        finishLoading();
+        return;
+      }
+
+      if (waitForTokens) {
+        timeoutId = setTimeout(async () => {
+          if (cancelled) return;
+          const { data: d2 } = await supabase.auth.getSession();
+          setSession(d2.session);
+          finishLoading();
+        }, 700);
+        return;
+      }
+
+      finishLoading();
+    };
+
+    void run();
+
+    return () => {
+      cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -60,7 +107,7 @@ const AdminResetPassword = () => {
   if (loadingSession) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
-        <p className="text-muted-foreground text-sm">Carregando…</p>
+        <p className="text-muted-foreground text-sm">A validar o link…</p>
       </div>
     );
   }
@@ -72,7 +119,7 @@ const AdminResetPassword = () => {
           <img src={logoImg} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl" />
           <h1 className="font-display text-xl font-bold text-foreground">Link inválido ou expirado</h1>
           <p className="text-sm text-muted-foreground">
-            Peça um novo e-mail na tela de login em <strong>Esqueci minha senha</strong> e use o link mais recente.
+            Peça um novo e-mail na tela de login em <strong>Esqueci minha senha</strong> e use o link mais recente. Confirme também se abriu o site correto (ex.: www.slturismo.com).
           </p>
           <Button asChild className="w-full">
             <Link to="/admin/login">Voltar ao login</Link>

@@ -6,9 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import logoImg from "@/assets/logo-sl-turismo.jpg";
-
-const redirectUrlForPasswordReset = () =>
-  `${window.location.origin}/admin/redefinir-senha`;
+import { getPasswordResetRedirectUrl } from "@/lib/app-url";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -87,7 +85,7 @@ const AdminLogin = () => {
     }
     setForgotLoading(true);
     const { error } = await supabase.auth.resetPasswordForEmail(emailTrim, {
-      redirectTo: redirectUrlForPasswordReset(),
+      redirectTo: getPasswordResetRedirectUrl(),
     });
     setForgotLoading(false);
     if (error) {

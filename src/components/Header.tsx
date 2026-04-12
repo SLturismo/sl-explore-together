@@ -51,7 +51,7 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:block shrink-0">
-          <a href="https://wa.me/5567999535548" target="_blank" rel="noopener noreferrer">
+          <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
           </a>
         </div>
@@ -67,7 +67,7 @@ const Header = () => {
             {navItems.map((item) => (
               <a key={item.href} href={item.href} className="text-sm font-medium text-foreground/80 hover:text-primary py-2" onClick={() => setIsOpen(false)}>{item.label}</a>
             ))}
-            <a href="https://wa.me/5567999535548" target="_blank" rel="noopener noreferrer">
+            <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="w-full bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
             </a>
           </nav>

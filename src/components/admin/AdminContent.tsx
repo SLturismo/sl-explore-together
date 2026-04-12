@@ -18,7 +18,7 @@ const AdminContent = () => {
     events: { title_prefix: "Eventos &", title_highlight: "Experiências", subtitle: "Viagens em grupo e tours exclusivos para mulheres que querem explorar o mundo juntas" },
     newsletter: { title: "Receba nossas novidades", subtitle: "Fique por dentro dos próximos destinos e eventos exclusivos", button_text: "Assinar" },
     footer: { description: "Viagens exclusivas e eventos para quem sonha em explorar o mundo com liberdade e segurança.", phone: "(67) 99953-5548", phone_link: "5567999535548", email: "contato@slturismo.com.br", city: "Campo Grande - MS", nav1: "Início", nav2: "Galeria", nav3: "Viagens & Eventos", nav4: "Eventos", nav5: "Sobre" },
-    header: { nav1: "Início", nav2: "Galeria", nav3: "Viagens & Eventos", nav4: "Eventos", nav5: "Sobre", contact_button: "Contato" },
+    header: { menu_inicio: "Início", menu_galeria: "Galeria", menu_planejar: "Viagens & Eventos", menu_eventos: "Eventos", menu_sobre: "Sobre", contact_button: "Contato" },
   });
   const [saving, setSaving] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,11 +96,11 @@ const AdminContent = () => {
       {/* Header */}
       <SectionCard sectionKey="header" title="Menu de Navegação" emoji="🧭">
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Field section="header" field="nav1" label="Link 1" />
-          <Field section="header" field="nav2" label="Link 2" />
-          <Field section="header" field="nav3" label="Link 3" />
-          <Field section="header" field="nav4" label="Link 4" />
-          <Field section="header" field="nav5" label="Link 5" />
+          <Field section="header" field="menu_inicio" label="Início" />
+          <Field section="header" field="menu_galeria" label="Galeria" />
+          <Field section="header" field="menu_planejar" label="Planejar" />
+          <Field section="header" field="menu_eventos" label="Eventos" />
+          <Field section="header" field="menu_sobre" label="Sobre" />
           <Field section="header" field="contact_button" label="Botão contato" />
         </div>
       </SectionCard>

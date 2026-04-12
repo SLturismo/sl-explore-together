@@ -16,14 +16,23 @@ const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [navItems, setNavItems] = useState(defaultNavItems);
   const [contactLabel, setContactLabel] = useState("Contato");
+  const [phoneLink, setPhoneLink] = useState("5567999535548");
 
   useEffect(() => {
-    supabase.from("site_content").select("content").eq("section_key", "header").maybeSingle().then(({ data }) => {
-      if (data?.content) {
-        const c = data.content as any;
+    Promise.all([
+      supabase.from("site_content").select("content").eq("section_key", "header").maybeSingle(),
+      supabase.from("site_content").select("content").eq("section_key", "footer").maybeSingle(),
+    ]).then(([{ data: headerData }, { data: footerData }]) => {
+      if (headerData?.content) {
+        const c = headerData.content as any;
         const hrefs = ["#inicio", "#galeria", "#planejar", "#eventos", "#sobre"];
-        setNavItems(hrefs.map((href, i) => ({ label: c[`nav${i + 1}`] || defaultNavItems[i].label, href })));
+        const keys = ["menu_inicio", "menu_galeria", "menu_planejar", "menu_eventos", "menu_sobre"];
+        setNavItems(hrefs.map((href, i) => ({ label: c[keys[i]] || c[`nav${i + 1}`] || defaultNavItems[i].label, href })));
         if (c.contact_button) setContactLabel(c.contact_button);
+      }
+      if (footerData?.content) {
+        const f = footerData.content as any;
+        if (f.phone_link) setPhoneLink(f.phone_link);
       }
     });
   }, []);
@@ -42,7 +51,7 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:block shrink-0">
-          <a href="https://wa.me/5567999535548" target="_blank" rel="noopener noreferrer">
+          <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
           </a>
         </div>
@@ -58,7 +67,7 @@ const Header = () => {
             {navItems.map((item) => (
               <a key={item.href} href={item.href} className="text-sm font-medium text-foreground/80 hover:text-primary py-2" onClick={() => setIsOpen(false)}>{item.label}</a>
             ))}
-            <a href="https://wa.me/5567999535548" target="_blank" rel="noopener noreferrer">
+            <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="w-full bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
             </a>
           </nav>

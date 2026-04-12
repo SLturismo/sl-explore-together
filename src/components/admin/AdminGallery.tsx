@@ -163,25 +163,33 @@ const AdminGallery = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{images.length} {images.length === 1 ? "imagem cadastrada" : "imagens cadastradas"}</p>
-        <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5">
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">
+            {images.length} {images.length === 1 ? "imagem" : "imagens"} na galeria
+          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">Ordene, edite metadados ou substitua ficheiros.</p>
+        </div>
+        <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 shrink-0">
           <Plus className="h-3.5 w-3.5" />
           Nova imagem
         </Button>
       </div>
 
       {images.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <ImageIcon className="h-10 w-10 mx-auto mb-3 opacity-30" />
-          <p>Nenhuma imagem na galeria.</p>
+        <div className="rounded-xl border border-dashed border-border/90 bg-muted/20 px-6 py-16 text-center">
+          <ImageIcon className="h-12 w-12 mx-auto text-muted-foreground/35 mb-4" strokeWidth={1.25} />
+          <p className="text-sm font-medium text-foreground">Galeria vazia</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            Adicione fotos para elas aparecerem no site. Pode definir categoria, título e descrição em cada item.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
           {images.map((img, index) => (
             <div
               key={img.id}
-              className="bg-card rounded-lg border border-border p-4 flex gap-4 items-start hover:shadow-md transition-shadow"
+              className="bg-card rounded-xl border border-border/80 p-4 flex gap-4 items-start shadow-sm hover:shadow-md transition-all"
             >
               <img src={img.url} alt={img.title || ""} className="w-20 h-20 rounded-lg object-cover shrink-0" />
               <div className="flex-1 min-w-0">

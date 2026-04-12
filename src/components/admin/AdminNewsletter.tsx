@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Search, Download, Mail } from "lucide-react";
+import { Trash2, Search, Download, Mail, Users } from "lucide-react";
 
 type Subscriber = { id: string; email: string; created_at: string };
 
@@ -39,28 +39,56 @@ const AdminNewsletter = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-sm text-muted-foreground flex items-center gap-1.5"><Mail className="h-4 w-4" />{subscribers.length} inscritos</p>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Buscar e-mail..." className="pl-8 h-9 w-52 bg-card text-sm" />
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
+            <Users className="h-5 w-5" />
           </div>
-          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5"><Download className="h-3.5 w-3.5" />CSV</Button>
+          <div>
+            <p className="text-sm font-semibold text-foreground">{subscribers.length} {subscribers.length === 1 ? "inscrito" : "inscritos"}</p>
+            <p className="text-xs text-muted-foreground">E-mails captados pelo formulário do site</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[200px] sm:flex-initial sm:min-w-0">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Buscar e-mail…"
+              className="pl-8 h-9 w-full sm:w-56 bg-background text-sm border-border/80"
+            />
+          </div>
+          <Button variant="outline" size="sm" onClick={exportCSV} className="gap-1.5 shrink-0 border-border/80">
+            <Download className="h-3.5 w-3.5" />
+            Exportar CSV
+          </Button>
         </div>
       </div>
 
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">Nenhum inscrito encontrado.</p>
+        <div className="rounded-xl border border-dashed border-border/90 bg-muted/20 px-6 py-16 text-center">
+          <Mail className="h-12 w-12 mx-auto text-muted-foreground/35 mb-4" strokeWidth={1.25} />
+          <p className="text-sm font-medium text-foreground">
+            {subscribers.length === 0 ? "Ainda não há inscritos" : "Nenhum resultado para esta pesquisa"}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            {subscribers.length === 0
+              ? "Quando visitantes assinarem a newsletter no site, a lista aparecerá aqui."
+              : "Tente outro termo na caixa de busca."}
+          </p>
+        </div>
       ) : (
-        <div className="space-y-2">
+        <div className="rounded-xl border border-border/80 bg-card shadow-sm overflow-hidden divide-y divide-border/60">
           {filtered.map((sub) => (
-            <div key={sub.id} className="bg-card rounded-lg border border-border px-4 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">{sub.email}</p>
-                <p className="text-[11px] text-muted-foreground">{new Date(sub.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })}</p>
+            <div key={sub.id} className="px-4 py-3.5 flex items-center justify-between gap-3 hover:bg-muted/25 transition-colors">
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-foreground truncate">{sub.email}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Inscrito em {new Date(sub.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" })}
+                </p>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDelete(sub.id)}>
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDelete(sub.id)}>
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
             </div>

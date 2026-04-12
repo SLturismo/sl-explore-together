@@ -75,9 +75,9 @@ const AdminCadastur = () => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Form */}
-      <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-4">
-        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" /> Dados do Cadastur
+      <div className="bg-card rounded-xl border border-border/80 p-6 shadow-sm space-y-4">
+        <h3 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2">
+          <ShieldCheck className="h-5 w-5 text-primary shrink-0" /> Dados do Cadastur
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -119,7 +119,7 @@ const AdminCadastur = () => {
       </div>
 
       {/* Preview */}
-      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+      <div className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
         <div className="flex items-center gap-2 mb-4 text-sm text-muted-foreground">
           <Eye className="h-4 w-4" /> Preview do Certificado
         </div>

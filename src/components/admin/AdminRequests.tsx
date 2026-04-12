@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useToast } from "@/hooks/use-toast";
-import { Eye, MessageCircle, Phone, Mail as MailIcon, MapPin, CalendarDays, DollarSign, FileText, Trash2 } from "lucide-react";
+import { Eye, MessageCircle, Phone, Mail as MailIcon, MapPin, CalendarDays, DollarSign, FileText, Trash2, Inbox } from "lucide-react";
 
 type TravelRequest = {
   id: string; name: string; email: string; phone: string | null;
@@ -68,25 +68,53 @@ const AdminRequests = () => {
 
   return (
     <div className="space-y-5">
-      {/* Status pills */}
-      <div className="flex flex-wrap gap-2">
-        <button onClick={() => setFilter("all")} className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${filter === "all" ? "bg-foreground text-background border-foreground" : "bg-card text-muted-foreground border-border hover:border-foreground/30"}`}>
-          Todas ({requests.length})
-        </button>
-        {allStatuses.map((s) => (
-          <button key={s} onClick={() => setFilter(filter === s ? "all" : s)} className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${filter === s ? "ring-2 ring-primary " + statusColors[s] : "bg-card text-muted-foreground border-border hover:border-foreground/30"}`}>
-            {statusLabels[s]} ({counts[s] || 0})
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm">
+        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Filtrar por estado</p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              filter === "all"
+                ? "bg-primary/12 text-primary border-primary/25 shadow-sm"
+                : "bg-background text-muted-foreground border-border hover:border-primary/20 hover:bg-muted/50"
+            }`}
+          >
+            Todas ({requests.length})
           </button>
-        ))}
+          {allStatuses.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setFilter(filter === s ? "all" : s)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                filter === s
+                  ? `ring-1 ring-primary/35 shadow-sm ${statusColors[s]}`
+                  : "bg-background text-muted-foreground border-border hover:border-primary/15 hover:bg-muted/50"
+              }`}
+            >
+              {statusLabels[s]} ({counts[s] || 0})
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Cards list */}
       {filtered.length === 0 ? (
-        <p className="text-muted-foreground text-center py-12">Nenhuma solicitação encontrada.</p>
+        <div className="rounded-xl border border-dashed border-border/90 bg-muted/20 px-6 py-16 text-center">
+          <Inbox className="h-12 w-12 mx-auto text-muted-foreground/35 mb-4" strokeWidth={1.25} />
+          <p className="text-sm font-medium text-foreground">Nenhuma solicitação neste filtro</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+            Os pedidos enviados pelo formulário do site aparecem aqui para consulta e acompanhamento.
+          </p>
+        </div>
       ) : (
         <div className="space-y-3">
           {filtered.map((req) => (
-            <div key={req.id} onClick={() => openDetail(req)} className="bg-card rounded-lg border border-border p-4 hover:shadow-md transition-shadow cursor-pointer flex items-center justify-between gap-4">
+            <div
+              key={req.id}
+              onClick={() => openDetail(req)}
+              className="bg-card rounded-xl border border-border/80 p-4 shadow-sm hover:shadow-md hover:border-border transition-all cursor-pointer flex items-center justify-between gap-4"
+            >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-foreground truncate">{req.name}</span>

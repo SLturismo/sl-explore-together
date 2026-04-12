@@ -85,17 +85,27 @@ const AdminEvents = () => {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{events.length} eventos cadastrados</p>
-        <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5"><Plus className="h-3.5 w-3.5" />Novo Evento</Button>
+      <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <p className="text-sm font-semibold text-foreground">{events.length} eventos cadastrados</p>
+          <p className="text-xs text-muted-foreground mt-0.5">Gerencie eventos e imagens associadas.</p>
+        </div>
+        <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 shrink-0">
+          <Plus className="h-3.5 w-3.5" />
+          Novo evento
+        </Button>
       </div>
 
       {events.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground"><CalendarDays className="h-10 w-10 mx-auto mb-3 opacity-30" /><p>Nenhum evento cadastrado.</p></div>
+        <div className="rounded-xl border border-dashed border-border/90 bg-muted/20 px-6 py-16 text-center">
+          <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/35 mb-4" strokeWidth={1.25} />
+          <p className="text-sm font-medium text-foreground">Nenhum evento cadastrado</p>
+          <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">Crie o primeiro evento para o painel passar a listá-lo aqui.</p>
+        </div>
       ) : (
         <div className="space-y-3">
           {events.map((event) => (
-            <div key={event.id} className="bg-card rounded-lg border border-border p-4 flex gap-4 items-start hover:shadow-md transition-shadow">
+            <div key={event.id} className="bg-card rounded-xl border border-border/80 p-4 flex gap-4 items-start shadow-sm hover:shadow-md transition-all">
               {event.image_url ? (
                 <img src={event.image_url} alt={event.title} className="w-20 h-20 rounded-lg object-cover shrink-0" />
               ) : (

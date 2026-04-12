@@ -39,10 +39,10 @@ const AdminSettings = () => {
 
   return (
     <div className="max-w-lg space-y-6">
-      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-6">
-          <KeyRound className="h-5 w-5 text-primary" />
-          Alterar Senha
+      <div className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2 mb-6">
+          <KeyRound className="h-5 w-5 text-primary shrink-0" />
+          Alterar senha
         </h3>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div className="space-y-1.5">
@@ -59,9 +59,9 @@ const AdminSettings = () => {
         </form>
       </div>
 
-      <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-        <h3 className="font-display text-lg font-semibold text-foreground flex items-center gap-2 mb-3">
-          <Shield className="h-5 w-5 text-primary" />
+      <div className="bg-card rounded-xl border border-border/80 p-6 shadow-sm">
+        <h3 className="text-lg font-semibold text-foreground tracking-tight flex items-center gap-2 mb-3">
+          <Shield className="h-5 w-5 text-primary shrink-0" />
           Segurança
         </h3>
         <p className="text-sm text-muted-foreground">

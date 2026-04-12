@@ -7,5 +7,8 @@
       "permanent": true
     }
   ],
-  "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }]
+  "rewrites": [
+    { "source": "/favicon.ico", "destination": "/og-image.jpg" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }

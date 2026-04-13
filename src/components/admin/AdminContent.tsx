@@ -27,6 +27,37 @@ function brandingObjectPathFromPublicUrl(url: string): string | null {
   }
 }
 
+/** Mensagens de ajuda conforme o erro devolvido pelo Storage. */
+function logoUploadErrorHelp(errorMessage: string): { title: string; description: string; duration?: number } {
+  const m = (errorMessage || "").toLowerCase();
+  if (m.includes("bucket not found") || (m.includes("not found") && m.includes("bucket"))) {
+    return {
+      title: "Bucket «branding» não existe no Supabase",
+      description:
+        "Abra o projeto no supabase.com → SQL Editor → cole e execute o ficheiro do repositório supabase/migrations/20260412120000_gallery_visible_branding_bucket.sql (cria o bucket público «branding» e as políticas para admins). Depois volte aqui e envie o logo outra vez.",
+      duration: 25_000,
+    };
+  }
+  if (
+    m.includes("row-level security") ||
+    m.includes("violates row-level security") ||
+    m.includes("policy") ||
+    m.includes("permission denied") ||
+    m.includes("unauthorized")
+  ) {
+    return {
+      title: "Upload bloqueado (permissões)",
+      description: `${errorMessage} Confirme que está com sessão iniciada como administrador e que as políticas de INSERT no bucket «branding» estão aplicadas (mesmo ficheiro SQL da migração).`,
+      duration: 18_000,
+    };
+  }
+  return {
+    title: "Erro no upload do logo",
+    description: `${errorMessage} Verifique no Supabase se o bucket «branding» existe, está público e se as políticas em storage.objects permitem INSERT para admins.`,
+    duration: 12_000,
+  };
+}
+
 const VIS_LABELS: Record<SiteVisibilityKey, string> = {
   hero: "Secção Hero (início)",
   gallery: "Galeria de fotos",
@@ -145,10 +176,12 @@ const AdminContent = () => {
     });
 
     if (upErr) {
+      const help = logoUploadErrorHelp(upErr.message);
       toast({
-        title: "Erro no upload do logo",
-        description: `${upErr.message} Verifique no Supabase se o bucket «branding» existe, está público e se a política de INSERT em storage.objects permite admins.`,
+        title: help.title,
+        description: help.description,
         variant: "destructive",
+        duration: help.duration,
       });
       setLogoUploading(false);
       setTimeout(() => {
@@ -232,6 +265,11 @@ const AdminContent = () => {
         <p className="text-xs text-muted-foreground mb-4">
           Usado no cabeçalho e rodapé do site, no login e no painel. Envie um ficheiro (PNG ou JPG recomendado). O upload grava logo no armazenamento e atualiza o site.
         </p>
+        <div className="rounded-lg border border-amber-500/25 bg-amber-500/5 px-3 py-2 mb-4 text-[11px] text-muted-foreground leading-relaxed">
+          <span className="font-medium text-foreground/90">Configuração única no Supabase:</span> tem de existir um bucket Storage público chamado{" "}
+          <code className="rounded bg-muted/80 px-1 py-0.5 text-foreground">branding</code> com políticas para admins. No repositório do projeto, execute no SQL Editor o ficheiro{" "}
+          <code className="rounded bg-muted/80 px-1 py-0.5 text-foreground">supabase/migrations/20260412120000_gallery_visible_branding_bucket.sql</code>.
+        </div>
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <img src={logoPreview} alt="Pré-visualização" className="h-20 w-auto max-w-[200px] object-contain rounded-lg border border-border bg-muted/30 p-2" />
           <div className="space-y-2">

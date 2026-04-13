@@ -158,7 +158,13 @@ const AdminGallery = () => {
   const toggleVisible = async (img: GalleryImage, next: boolean) => {
     const { error } = await supabase.from("gallery_images").update({ is_visible: next }).eq("id", img.id);
     if (error) {
-      toast({ title: "Erro ao atualizar visibilidade", variant: "destructive" });
+      const extra = [error.hint, error.details].filter(Boolean).join(" — ");
+      toast({
+        title: "Erro ao atualizar visibilidade",
+        description: [error.message, extra].filter(Boolean).join(" ") || undefined,
+        variant: "destructive",
+        duration: 14_000,
+      });
       return;
     }
     setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, is_visible: next } : i)));

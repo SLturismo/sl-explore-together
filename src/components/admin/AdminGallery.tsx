@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Trash2, Plus, Pencil, ArrowUp, ArrowDown, Upload, ImageIcon } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Trash2, Plus, Pencil, ArrowUp, ArrowDown, Upload, ImageIcon, AlertCircle } from "lucide-react";
 
 type GalleryImage = {
   id: string;
@@ -55,6 +56,8 @@ function normalizeGalleryRow(row: unknown): GalleryImage {
 
 const AdminGallery = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
+  /** True quando a API (PostgREST) não expõe is_visible — confirmado por SELECT * sem chave ou PGRST204. */
+  const [apiMissingIsVisible, setApiMissingIsVisible] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -71,6 +74,7 @@ const AdminGallery = () => {
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
     if (error) {
+      setApiMissingIsVisible(false);
       console.error(`${LOG} fetchImages:error`, {
         status,
         code: error.code,
@@ -80,6 +84,9 @@ const AdminGallery = () => {
       });
     } else {
       const sample = data?.[0] as Record<string, unknown> | undefined;
+      const missingCol =
+        !!sample && !Object.prototype.hasOwnProperty.call(sample, "is_visible");
+      setApiMissingIsVisible(missingCol);
       console.log(`${LOG} fetchImages:ok`, {
         status,
         rowCount: data?.length ?? 0,
@@ -87,10 +94,24 @@ const AdminGallery = () => {
         firstRowIsVisible: sample?.is_visible,
         firstRowId: sample?.id,
       });
-      if (sample && !Object.prototype.hasOwnProperty.call(sample, "is_visible")) {
+      if (missingCol) {
         console.warn(
           `${LOG} Coluna is_visible ausente na API. Abra o Supabase cujo URL = VITE_SUPABASE_URL na Vercel, rode o ALTER em gallery_images e NOTIFY pgrst, 'reload schema';`,
         );
+        // #region agent log
+        fetch("http://127.0.0.1:7349/ingest/5a1044cd-e2f7-43f4-b8a3-db98c50af754", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "686b8a" },
+          body: JSON.stringify({
+            sessionId: "686b8a",
+            hypothesisId: "H1-H2",
+            location: "AdminGallery.tsx:fetchImages",
+            message: "SELECT * sem chave is_visible (PostgREST schema)",
+            data: { rowCount: data?.length ?? 0, firstRowKeyCount: sample ? Object.keys(sample).length : 0 },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
       }
     }
     setImages((data || []).map(normalizeGalleryRow));
@@ -196,6 +217,14 @@ const AdminGallery = () => {
   };
 
   const toggleVisible = async (img: GalleryImage, next: boolean) => {
+    if (apiMissingIsVisible) {
+      toast({
+        title: "Base de dados incompleta",
+        description: "Corra o SQL no Supabase (projeto do VITE_SUPABASE_URL) para criar is_visible e NOTIFY pgrst.",
+        variant: "destructive",
+      });
+      return;
+    }
     console.log(`${LOG} toggleVisible:start`, {
       imageId: img.id,
       next,
@@ -210,6 +239,23 @@ const AdminGallery = () => {
       .maybeSingle();
 
     if (error) {
+      if (error.code === "PGRST204") {
+        setApiMissingIsVisible(true);
+        // #region agent log
+        fetch("http://127.0.0.1:7349/ingest/5a1044cd-e2f7-43f4-b8a3-db98c50af754", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "686b8a" },
+          body: JSON.stringify({
+            sessionId: "686b8a",
+            hypothesisId: "H2",
+            location: "AdminGallery.tsx:toggleVisible",
+            message: "PGRST204 schema cache",
+            data: { code: error.code, status },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+      }
       console.error(`${LOG} toggleVisible:error`, {
         status,
         statusText,
@@ -260,6 +306,26 @@ const AdminGallery = () => {
 
   return (
     <div className="space-y-5">
+      {apiMissingIsVisible && (
+        <Alert variant="destructive" className="border-destructive/80">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Visibilidade na galeria indisponível (API sem coluna is_visible)</AlertTitle>
+          <AlertDescription className="text-destructive/95 space-y-2 mt-2">
+            <p>
+              O PostgREST devolve PGRST204 / SELECT sem <code className="rounded bg-background/80 px-1">is_visible</code>. Isto é resolvido{" "}
+              <strong>só no Supabase</strong> do mesmo projeto que <code className="rounded bg-background/80 px-1">VITE_SUPABASE_URL</code> na Vercel (ex.:{" "}
+              <code className="rounded bg-background/80 px-1">miqztsvsaiuhyotoaneb</code>).
+            </p>
+            <pre className="text-xs bg-background/90 text-foreground p-3 rounded-md overflow-x-auto border border-border">
+              {`ALTER TABLE public.gallery_images
+  ADD COLUMN IF NOT EXISTS is_visible boolean NOT NULL DEFAULT true;
+NOTIFY pgrst, 'reload schema';`}
+            </pre>
+            <p className="text-xs">Depois recarregue esta página. O interruptor «Visível no site» só funciona após isto.</p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="rounded-xl border border-border/80 bg-card p-4 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-foreground">
@@ -267,7 +333,13 @@ const AdminGallery = () => {
           </p>
           <p className="text-xs text-muted-foreground mt-0.5">Ordene, edite metadados ou substitua ficheiros.</p>
         </div>
-        <Button size="sm" onClick={() => setShowCreate(true)} className="gap-1.5 shrink-0">
+        <Button
+          size="sm"
+          onClick={() => setShowCreate(true)}
+          className="gap-1.5 shrink-0"
+          disabled={apiMissingIsVisible}
+          title={apiMissingIsVisible ? "Corra o SQL is_visible no Supabase antes de adicionar imagens" : undefined}
+        >
           <Plus className="h-3.5 w-3.5" />
           Nova imagem
         </Button>
@@ -303,7 +375,12 @@ const AdminGallery = () => {
                 </div>
                 {img.description && <p className="text-xs text-muted-foreground line-clamp-2">{img.description}</p>}
                 <div className="flex items-center gap-2 mt-3">
-                  <Switch id={`vis-${img.id}`} checked={img.is_visible !== false} onCheckedChange={(c) => toggleVisible(img, c)} />
+                  <Switch
+                    id={`vis-${img.id}`}
+                    checked={img.is_visible !== false}
+                    disabled={apiMissingIsVisible}
+                    onCheckedChange={(c) => toggleVisible(img, c)}
+                  />
                   <Label htmlFor={`vis-${img.id}`} className="text-xs font-normal cursor-pointer">
                     Visível no site
                   </Label>

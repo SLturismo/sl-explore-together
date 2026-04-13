@@ -6,10 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import logoImg from "@/assets/logo-sl-turismo.jpg";
+import { usePublicSite } from "@/contexts/PublicSiteContext";
 
 /** Página aberta pelo link do e-mail "Redefinir senha" do Supabase (redirectTo). */
 const AdminResetPassword = () => {
+  const { logoSrc } = usePublicSite();
   const [session, setSession] = useState<Session | null>(null);
   const [loadingSession, setLoadingSession] = useState(true);
   const [password, setPassword] = useState("");
@@ -116,7 +117,7 @@ const AdminResetPassword = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
         <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border text-center space-y-4">
-          <img src={logoImg} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl" />
+          <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl" />
           <h1 className="font-display text-xl font-bold text-foreground">Link inválido ou expirado</h1>
           <p className="text-sm text-muted-foreground">
             Peça um novo e-mail na tela de login em <strong>Esqueci minha senha</strong> e use o link mais recente. Confirme também se abriu o site correto (ex.: www.slturismo.com).
@@ -133,7 +134,7 @@ const AdminResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
         <div className="text-center mb-6">
-          <img src={logoImg} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl mb-3" />
+          <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl mb-3" />
           <h1 className="font-display text-xl font-bold text-foreground">Nova senha</h1>
           <p className="text-muted-foreground text-sm mt-1">Defina a senha que usará no painel administrativo.</p>
         </div>

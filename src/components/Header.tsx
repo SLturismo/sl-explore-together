@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import logoImg from "@/assets/logo-sl-turismo.jpg";
+import { usePublicSite } from "@/contexts/PublicSiteContext";
 
 const defaultNavItems = [
   { label: "Início", href: "#inicio" },
@@ -13,6 +13,7 @@ const defaultNavItems = [
 ];
 
 const Header = () => {
+  const { logoSrc } = usePublicSite();
   const [isOpen, setIsOpen] = useState(false);
   const [navItems, setNavItems] = useState(defaultNavItems);
   const [contactLabel, setContactLabel] = useState("Contato");
@@ -41,7 +42,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
         <a href="#inicio" className="flex items-center gap-2 shrink-0">
-          <img src={logoImg} alt="SL Turismo" className="h-12 md:h-16 w-auto rounded-lg" />
+          <img src={logoSrc} alt="SL Turismo" className="h-12 md:h-16 w-auto rounded-lg" />
         </a>
 
         <nav className="hidden md:flex items-center gap-6">

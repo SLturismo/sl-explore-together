@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { ShieldCheck, Award, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisible } from "@/contexts/PublicSiteContext";
 
 type CadasturData = {
   numero?: string;
@@ -19,6 +20,7 @@ const defaultData: CadasturData = {
 };
 
 const Cadastur = () => {
+  const visible = useSectionVisible("cadastur");
   const [data, setData] = useState<CadasturData>(defaultData);
 
   useEffect(() => {
@@ -34,6 +36,8 @@ const Cadastur = () => {
     };
     fetch();
   }, []);
+
+  if (!visible) return null;
 
   return (
     <section className="py-16 bg-rose-light">

@@ -6,8 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisible } from "@/contexts/PublicSiteContext";
 
 const TravelForm = () => {
+  const visible = useSectionVisible("travel_form");
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" });
@@ -45,6 +47,8 @@ const TravelForm = () => {
     if (error) { toast({ title: "Erro ao enviar. Tente novamente.", variant: "destructive" }); }
     else { toast({ title: "Solicitação enviada com sucesso! 🎉", description: "Entraremos em contato em breve." }); setForm({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" }); }
   };
+
+  if (!visible) return null;
 
   return (
     <section id="planejar" className="py-20 bg-background">

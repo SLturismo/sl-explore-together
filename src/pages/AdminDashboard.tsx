@@ -7,7 +7,7 @@ import {
   LogOut, Image, Calendar, ShieldCheck, Settings, FileText, Users,
   ChevronLeft, ChevronRight, MessageSquare,
 } from "lucide-react";
-import logoImg from "@/assets/logo-sl-turismo.jpg";
+import { usePublicSite } from "@/contexts/PublicSiteContext";
 import AdminGallery from "@/components/admin/AdminGallery";
 import AdminEvents from "@/components/admin/AdminEvents";
 import AdminRequests from "@/components/admin/AdminRequests";
@@ -27,6 +27,7 @@ const menuItems = [
 ];
 
 const AdminDashboard = () => {
+  const { logoSrc } = usePublicSite();
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeSection, setActiveSection] = useState("requests");
@@ -66,7 +67,7 @@ const AdminDashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/50">
         <div className="text-center rounded-2xl border border-border/80 bg-card px-10 py-8 shadow-sm">
-          <img src={logoImg} alt="SL Turismo" className="h-14 w-14 mx-auto mb-4 rounded-xl object-cover shadow-sm ring-1 ring-border/60" />
+          <img src={logoSrc} alt="SL Turismo" className="h-14 w-14 mx-auto mb-4 rounded-xl object-cover shadow-sm ring-1 ring-border/60" />
           <p className="text-sm font-medium text-foreground">A carregar painel</p>
           <p className="text-xs text-muted-foreground mt-1">Um momento…</p>
         </div>
@@ -86,7 +87,7 @@ const AdminDashboard = () => {
       >
         {/* Logo */}
         <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[4.25rem]">
-          <img src={logoImg} alt="SL Turismo" className="h-10 w-10 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" />
+          <img src={logoSrc} alt="SL Turismo" className="h-10 w-10 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" />
           {!sidebarCollapsed && (
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-foreground tracking-tight truncate">SL Turismo</span>

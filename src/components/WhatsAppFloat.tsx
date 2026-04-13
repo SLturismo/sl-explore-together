@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisible } from "@/contexts/PublicSiteContext";
 
 const WhatsAppFloat = () => {
+  const visible = useSectionVisible("whatsapp_float");
   const [phoneLink, setPhoneLink] = useState("5567999535548");
 
   useEffect(() => {
@@ -12,6 +14,8 @@ const WhatsAppFloat = () => {
       }
     });
   }, []);
+
+  if (!visible) return null;
 
   return (
     <a

@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Trash2, Plus, Pencil, ArrowUp, ArrowDown, Upload, ImageIcon } from "lucide-react";
 
@@ -17,6 +18,7 @@ type GalleryImage = {
   title: string | null;
   description: string | null;
   display_order: number | null;
+  is_visible: boolean;
 };
 
 const categories = [
@@ -85,6 +87,7 @@ const AdminGallery = () => {
       title: form.title || null,
       description: form.description || null,
       display_order: nextOrder,
+      is_visible: true,
     });
     if (error) {
       toast({ title: "Erro ao salvar imagem", variant: "destructive" });
@@ -152,6 +155,15 @@ const AdminGallery = () => {
     }
   };
 
+  const toggleVisible = async (img: GalleryImage, next: boolean) => {
+    const { error } = await supabase.from("gallery_images").update({ is_visible: next }).eq("id", img.id);
+    if (error) {
+      toast({ title: "Erro ao atualizar visibilidade", variant: "destructive" });
+      return;
+    }
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, is_visible: next } : i)));
+  };
+
   const moveImage = async (index: number, direction: -1 | 1) => {
     const newIndex = index + direction;
     if (newIndex < 0 || newIndex >= images.length) return;
@@ -189,17 +201,28 @@ const AdminGallery = () => {
           {images.map((img, index) => (
             <div
               key={img.id}
-              className="bg-card rounded-xl border border-border/80 p-4 flex gap-4 items-start shadow-sm hover:shadow-md transition-all"
+              className={`bg-card rounded-xl border border-border/80 p-4 flex gap-4 items-start shadow-sm hover:shadow-md transition-all ${img.is_visible === false ? "opacity-60" : ""}`}
             >
               <img src={img.url} alt={img.title || ""} className="w-20 h-20 rounded-lg object-cover shrink-0" />
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-medium text-foreground truncate">{img.title || "Sem título"}</h3>
                   <Badge variant="secondary" className="text-[10px] shrink-0">
                     {img.category}
                   </Badge>
+                  {!img.is_visible && (
+                    <Badge variant="outline" className="text-[10px] shrink-0">
+                      Oculta no site
+                    </Badge>
+                  )}
                 </div>
                 {img.description && <p className="text-xs text-muted-foreground line-clamp-2">{img.description}</p>}
+                <div className="flex items-center gap-2 mt-3">
+                  <Switch id={`vis-${img.id}`} checked={img.is_visible !== false} onCheckedChange={(c) => toggleVisible(img, c)} />
+                  <Label htmlFor={`vis-${img.id}`} className="text-xs font-normal cursor-pointer">
+                    Visível no site
+                  </Label>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-1 shrink-0 justify-end">
                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveImage(index, -1)} disabled={index === 0}>

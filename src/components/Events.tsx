@@ -3,6 +3,7 @@ import { Calendar, MapPin, Users } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisible } from "@/contexts/PublicSiteContext";
 import galleryResort from "@/assets/gallery-resort.jpg";
 
 type EventRow = {
@@ -28,7 +29,7 @@ const Events = () => {
     const load = async () => {
       const [{ data: contentData }, { data: eventsData }, { data: footerData }] = await Promise.all([
         supabase.from("site_content").select("content").eq("section_key", "events").maybeSingle(),
-        supabase.from("events").select("*").eq("active", true).order("created_at", { ascending: true }),
+        supabase.from("events").select("*").eq("active", true).order("created_at", { ascending: false }),
         supabase.from("site_content").select("content").eq("section_key", "footer").maybeSingle(),
       ]);
 
@@ -49,6 +50,8 @@ const Events = () => {
     };
     load();
   }, []);
+
+  if (!visible) return null;
 
   if (!loading && events.length === 0) return null;
 

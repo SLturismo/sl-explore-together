@@ -4,9 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import logoImg from "@/assets/logo-sl-turismo.jpg";
+import { usePublicSite, useSectionVisible } from "@/contexts/PublicSiteContext";
 
 const Footer = () => {
+  const { logoSrc } = usePublicSite();
+  const showNewsletter = useSectionVisible("footer_newsletter");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -72,23 +74,24 @@ const Footer = () => {
 
   return (
     <>
-      {/* Newsletter section */}
-      <section className="bg-primary py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">{content.newsletter_title}</h3>
-          <p className="text-primary-foreground/80 text-sm mb-6">{content.newsletter_subtitle}</p>
-          <form onSubmit={handleNewsletter} className="flex gap-2 max-w-md mx-auto">
-            <Input type="email" placeholder="Seu melhor e-mail" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-white/90 border-0 text-foreground placeholder:text-muted-foreground" />
-            <Button type="submit" variant="secondary" disabled={loading} className="shrink-0">{loading ? "..." : content.newsletter_button}</Button>
-          </form>
-        </div>
-      </section>
+      {showNewsletter && (
+        <section className="bg-primary py-12">
+          <div className="container mx-auto px-4 text-center">
+            <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">{content.newsletter_title}</h3>
+            <p className="text-primary-foreground/80 text-sm mb-6">{content.newsletter_subtitle}</p>
+            <form onSubmit={handleNewsletter} className="flex gap-2 max-w-md mx-auto">
+              <Input type="email" placeholder="Seu melhor e-mail" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-white/90 border-0 text-foreground placeholder:text-muted-foreground" />
+              <Button type="submit" variant="secondary" disabled={loading} className="shrink-0">{loading ? "..." : content.newsletter_button}</Button>
+            </form>
+          </div>
+        </section>
+      )}
 
       <footer className="bg-foreground text-primary-foreground py-12">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <img src={logoImg} alt="SL Turismo" className="h-16 w-auto rounded-lg mb-4" />
+              <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto rounded-lg mb-4" />
               <p className="text-primary-foreground/70 text-sm">{content.description}</p>
             </div>
 

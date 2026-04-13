@@ -57,6 +57,7 @@ export type Database = {
           description: string | null
           display_order: number | null
           id: string
+          is_visible: boolean
           title: string | null
           url: string
         }
@@ -66,6 +67,7 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           id?: string
+          is_visible?: boolean
           title?: string | null
           url: string
         }
@@ -75,6 +77,7 @@ export type Database = {
           description?: string | null
           display_order?: number | null
           id?: string
+          is_visible?: boolean
           title?: string | null
           url?: string
         }

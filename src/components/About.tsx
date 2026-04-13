@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Heart, Shield, Star, Users } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import logoImg from "@/assets/logo-sl-turismo.jpg";
+import { usePublicSite, useSectionVisible } from "@/contexts/PublicSiteContext";
 
 const icons = [Heart, Shield, Star, Users];
 
@@ -40,6 +40,8 @@ const About = () => {
     });
   }, []);
 
+  if (!visible) return null;
+
   return (
     <section id="sobre" className="py-20 bg-background">
       <div className="container mx-auto px-4">
@@ -70,7 +72,7 @@ const About = () => {
           <div className="flex justify-center">
             <div className="relative">
               <div className="bg-gradient-to-br from-primary/20 to-gold/20 rounded-2xl p-8 flex items-center justify-center">
-                <img src={logoImg} alt="SL Turismo" className="w-64 h-64 object-contain rounded-xl" />
+                <img src={logoSrc} alt="SL Turismo" className="w-64 h-64 object-contain rounded-xl" />
               </div>
             </div>
           </div>

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useSectionVisible } from "@/contexts/PublicSiteContext";
 import heroImg from "@/assets/hero-beach.jpg";
 
 const Hero = () => {
+  const visible = useSectionVisible("hero");
   const [title, setTitle] = useState("Nunca é tarde para");
   const [highlight, setHighlight] = useState("viver seus sonhos");
   const [subtitle, setSubtitle] = useState("Viagens exclusivas para mulheres que buscam liberdade, segurança e experiências inesquecíveis.");
@@ -19,6 +21,8 @@ const Hero = () => {
       }
     });
   }, []);
+
+  if (!visible) return null;
 
   return (
     <section id="inicio" className="relative min-h-screen flex items-center justify-center overflow-hidden">

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type ChangeEventHandler } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,19 @@ import { DEFAULT_VISIBILITY } from "@/contexts/PublicSiteContext";
 import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
 
 type SectionData = Record<string, string>;
+
+/** Extrai o caminho no bucket a partir da URL pública do Storage. */
+function brandingObjectPathFromPublicUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    const marker = "/object/public/branding/";
+    const i = u.pathname.indexOf(marker);
+    if (i === -1) return null;
+    return decodeURIComponent(u.pathname.slice(i + marker.length));
+  } catch {
+    return null;
+  }
+}
 
 const VIS_LABELS: Record<SiteVisibilityKey, string> = {
   hero: "Secção Hero (início)",
@@ -43,6 +56,7 @@ const AdminContent = () => {
   const [saving, setSaving] = useState<string | null>(null);
   const [logoUploading, setLogoUploading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -95,20 +109,59 @@ const AdminContent = () => {
     toast({ title: "Visibilidade do site salva!" });
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file) return;
+    if (!file || file.size === 0) {
+      setTimeout(() => {
+        e.target.value = "";
+      }, 0);
+      return;
+    }
+
     setLogoUploading(true);
     const rawExt = (file.name.split(".").pop() || "jpg").toLowerCase();
     const ext = rawExt.replace(/[^a-z0-9]/g, "") || "jpg";
-    const path = `agency-logo.${ext}`;
-    const { error: upErr } = await supabase.storage.from("branding").upload(path, file, { upsert: true });
+    // Caminho único: só precisa da política INSERT (evita 400 com upsert/replace no mesmo path).
+    const path = `logo-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`;
+
+    const prevUrl = sections.branding?.logo_url?.trim();
+    const oldObjectPath = prevUrl ? brandingObjectPathFromPublicUrl(prevUrl) : null;
+
+    const contentType =
+      file.type && file.type.startsWith("image/")
+        ? file.type
+        : ext === "jpg" || ext === "jpeg"
+          ? "image/jpeg"
+          : ext === "png"
+            ? "image/png"
+            : ext === "webp"
+              ? "image/webp"
+              : "application/octet-stream";
+
+    const { error: upErr } = await supabase.storage.from("branding").upload(path, file, {
+      cacheControl: "3600",
+      contentType,
+      upsert: false,
+    });
+
     if (upErr) {
-      toast({ title: "Erro no upload do logo", description: upErr.message, variant: "destructive" });
+      toast({
+        title: "Erro no upload do logo",
+        description: `${upErr.message} Verifique no Supabase se o bucket «branding» existe, está público e se a política de INSERT em storage.objects permite admins.`,
+        variant: "destructive",
+      });
       setLogoUploading(false);
+      setTimeout(() => {
+        e.target.value = "";
+      }, 0);
       return;
     }
+
+    if (oldObjectPath && oldObjectPath !== path) {
+      const { error: rmErr } = await supabase.storage.from("branding").remove([oldObjectPath]);
+      if (rmErr) console.warn("[branding] remover logo anterior:", rmErr.message);
+    }
+
     const { data: pub } = supabase.storage.from("branding").getPublicUrl(path);
     const content = { ...sections.branding, logo_url: pub.publicUrl };
     setSections((p) => ({ ...p, branding: { ...p.branding, logo_url: pub.publicUrl } }));
@@ -118,8 +171,12 @@ const AdminContent = () => {
     } else {
       await supabase.from("site_content").insert({ section_key: "branding", content });
     }
-    toast({ title: "Logo atualizado", description: "Já aparece no site, no login e no painel." });
+
     setLogoUploading(false);
+    setTimeout(() => {
+      e.target.value = "";
+      toast({ title: "Logo atualizado", description: "Já aparece no site, no login e no painel." });
+    }, 0);
   };
 
   const updateField = (section: string, field: string, value: string) => {
@@ -178,11 +235,26 @@ const AdminContent = () => {
         <div className="flex flex-col sm:flex-row gap-4 items-start">
           <img src={logoPreview} alt="Pré-visualização" className="h-20 w-auto max-w-[200px] object-contain rounded-lg border border-border bg-muted/30 p-2" />
           <div className="space-y-2">
-            <label className="inline-flex items-center gap-2 text-sm font-medium text-primary cursor-pointer">
+            <input
+              ref={logoFileInputRef}
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              tabIndex={-1}
+              disabled={logoUploading}
+              onChange={handleLogoUpload}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 h-auto py-2 px-3 text-primary hover:text-primary hover:bg-primary/10"
+              disabled={logoUploading}
+              onClick={() => logoFileInputRef.current?.click()}
+            >
               <Upload className="h-4 w-4 shrink-0" />
               <span className="underline">{logoUploading ? "A enviar…" : "Carregar novo logo"}</span>
-              <input type="file" accept="image/*" className="hidden" disabled={logoUploading} onChange={handleLogoUpload} />
-            </label>
+            </Button>
             <p className="text-[11px] text-muted-foreground">Se não houver logo no painel, o site usa o logo predefinido local.</p>
           </div>
         </div>

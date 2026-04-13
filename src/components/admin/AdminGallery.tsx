@@ -98,20 +98,6 @@ const AdminGallery = () => {
         console.warn(
           `${LOG} Coluna is_visible ausente na API. Abra o Supabase cujo URL = VITE_SUPABASE_URL na Vercel, rode o ALTER em gallery_images e NOTIFY pgrst, 'reload schema';`,
         );
-        // #region agent log
-        fetch("http://127.0.0.1:7349/ingest/5a1044cd-e2f7-43f4-b8a3-db98c50af754", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "686b8a" },
-          body: JSON.stringify({
-            sessionId: "686b8a",
-            hypothesisId: "H1-H2",
-            location: "AdminGallery.tsx:fetchImages",
-            message: "SELECT * sem chave is_visible (PostgREST schema)",
-            data: { rowCount: data?.length ?? 0, firstRowKeyCount: sample ? Object.keys(sample).length : 0 },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
       }
     }
     setImages((data || []).map(normalizeGalleryRow));
@@ -241,20 +227,6 @@ const AdminGallery = () => {
     if (error) {
       if (error.code === "PGRST204") {
         setApiMissingIsVisible(true);
-        // #region agent log
-        fetch("http://127.0.0.1:7349/ingest/5a1044cd-e2f7-43f4-b8a3-db98c50af754", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "686b8a" },
-          body: JSON.stringify({
-            sessionId: "686b8a",
-            hypothesisId: "H2",
-            location: "AdminGallery.tsx:toggleVisible",
-            message: "PGRST204 schema cache",
-            data: { code: error.code, status },
-            timestamp: Date.now(),
-          }),
-        }).catch(() => {});
-        // #endregion
       }
       console.error(`${LOG} toggleVisible:error`, {
         status,

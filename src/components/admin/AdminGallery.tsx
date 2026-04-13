@@ -40,6 +40,17 @@ const emptyForm = { category: "Praias", title: "", description: "" };
 
 const LOG = "[AdminGallery]";
 
+/** Host do projeto Supabase embutido no build (Vercel → Environment Variables). */
+function supabaseApiHost(): string {
+  const raw = import.meta.env.VITE_SUPABASE_URL as string | undefined;
+  if (!raw?.trim()) return "(VITE_SUPABASE_URL em falta no build)";
+  try {
+    return new URL(raw.trim()).hostname;
+  } catch {
+    return raw.trim();
+  }
+}
+
 /** API sem coluna is_visible devolve undefined → tratamos como visível (evita badge/switch contraditórios). */
 function normalizeGalleryRow(row: unknown): GalleryImage {
   const r = row as Record<string, unknown>;
@@ -96,7 +107,7 @@ const AdminGallery = () => {
       });
       if (missingCol) {
         console.warn(
-          `${LOG} Coluna is_visible ausente na API. Abra o Supabase cujo URL = VITE_SUPABASE_URL na Vercel, rode o ALTER em gallery_images e NOTIFY pgrst, 'reload schema';`,
+          `${LOG} Coluna is_visible ausente na API (host ${supabaseApiHost()}). No Supabase desse mesmo projeto: SQL Editor → só o ALTER + NOTIFY; Table Editor → gallery_images → deve aparecer is_visible.`,
         );
       }
     }
@@ -284,16 +295,24 @@ const AdminGallery = () => {
           <AlertTitle>Visibilidade na galeria indisponível (API sem coluna is_visible)</AlertTitle>
           <AlertDescription className="text-destructive/95 space-y-2 mt-2">
             <p>
-              O PostgREST devolve PGRST204 / SELECT sem <code className="rounded bg-background/80 px-1">is_visible</code>. Isto é resolvido{" "}
-              <strong>só no Supabase</strong> do mesmo projeto que <code className="rounded bg-background/80 px-1">VITE_SUPABASE_URL</code> na Vercel (ex.:{" "}
-              <code className="rounded bg-background/80 px-1">miqztsvsaiuhyotoaneb</code>).
+              Esta página fala com o Supabase em{" "}
+              <code className="rounded bg-background/80 px-1 break-all">{supabaseApiHost()}</code>. O SQL tem de ser executado{" "}
+              <strong>nesse</strong> projeto (noutro <code className="rounded bg-background/80 px-1">*.supabase.co</code> não altera este site).
+            </p>
+            <p className="text-xs">
+              Confirme em <strong>Table Editor → gallery_images</strong> se existe a coluna <code className="rounded bg-background/80 px-1">is_visible</code>.
+              Se não existir, no <strong>SQL Editor</strong> apague qualquer texto extra e execute <strong>só</strong> o bloco abaixo; depois{" "}
+              <code className="rounded bg-background/80 px-1">NOTIFY pgrst, 'reload schema';</code> (ou reinicie o projeto em Settings).
             </p>
             <pre className="text-xs bg-background/90 text-foreground p-3 rounded-md overflow-x-auto border border-border">
               {`ALTER TABLE public.gallery_images
   ADD COLUMN IF NOT EXISTS is_visible boolean NOT NULL DEFAULT true;
 NOTIFY pgrst, 'reload schema';`}
             </pre>
-            <p className="text-xs">Depois recarregue esta página. O interruptor «Visível no site» só funciona após isto.</p>
+            <p className="text-xs">
+              Recarregue esta página com cache limpo (Ctrl+Shift+R). O interruptor «Visível no site» só funciona quando a API devolver{" "}
+              <code className="rounded bg-background/80 px-1">is_visible</code> nas linhas.
+            </p>
           </AlertDescription>
         </Alert>
       )}

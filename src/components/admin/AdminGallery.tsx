@@ -37,6 +37,8 @@ const categories = [
 
 const emptyForm = { category: "Praias", title: "", description: "" };
 
+const LOG = "[AdminGallery]";
+
 const AdminGallery = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -48,11 +50,30 @@ const AdminGallery = () => {
   const { toast } = useToast();
 
   const fetchImages = async () => {
-    const { data } = await supabase
+    console.log(`${LOG} fetchImages:start`);
+    const { data, error, status } = await supabase
       .from("gallery_images")
       .select("*")
       .order("display_order", { ascending: true })
       .order("created_at", { ascending: true });
+    if (error) {
+      console.error(`${LOG} fetchImages:error`, {
+        status,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+    } else {
+      const sample = data?.[0] as Record<string, unknown> | undefined;
+      console.log(`${LOG} fetchImages:ok`, {
+        status,
+        rowCount: data?.length ?? 0,
+        firstRowKeys: sample ? Object.keys(sample) : [],
+        firstRowIsVisible: sample?.is_visible,
+        firstRowId: sample?.id,
+      });
+    }
     setImages(data || []);
   };
 
@@ -156,8 +177,28 @@ const AdminGallery = () => {
   };
 
   const toggleVisible = async (img: GalleryImage, next: boolean) => {
-    const { error } = await supabase.from("gallery_images").update({ is_visible: next }).eq("id", img.id);
+    console.log(`${LOG} toggleVisible:start`, {
+      imageId: img.id,
+      next,
+      previousVisible: img.is_visible,
+    });
+
+    const { data, error, status, statusText } = await supabase
+      .from("gallery_images")
+      .update({ is_visible: next })
+      .eq("id", img.id)
+      .select("id,is_visible")
+      .maybeSingle();
+
     if (error) {
+      console.error(`${LOG} toggleVisible:error`, {
+        status,
+        statusText,
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
       const extra = [error.hint, error.details].filter(Boolean).join(" — ");
       toast({
         title: "Erro ao atualizar visibilidade",
@@ -167,7 +208,26 @@ const AdminGallery = () => {
       });
       return;
     }
-    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, is_visible: next } : i)));
+
+    if (data == null) {
+      console.warn(`${LOG} toggleVisible:noRowReturned`, {
+        status,
+        statusText,
+        imageId: img.id,
+        hint: "O UPDATE não devolveu linha (0 matches, RLS a bloquear SELECT após update, ou id/projeto incorreto).",
+      });
+      toast({
+        title: "Visibilidade não gravada",
+        description:
+          "O servidor não confirmou a linha atualizada. Abra a consola (F12) e procure [AdminGallery] toggleVisible:noRowReturned. Confirme VITE_SUPABASE_URL na Vercel = projeto onde correu o SQL.",
+        variant: "destructive",
+        duration: 16_000,
+      });
+      return;
+    }
+
+    console.log(`${LOG} toggleVisible:ok`, { status, data });
+    setImages((prev) => prev.map((i) => (i.id === img.id ? { ...i, is_visible: data.is_visible } : i)));
   };
 
   const moveImage = async (index: number, direction: -1 | 1) => {

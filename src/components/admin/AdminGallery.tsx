@@ -39,6 +39,20 @@ const emptyForm = { category: "Praias", title: "", description: "" };
 
 const LOG = "[AdminGallery]";
 
+/** API sem coluna is_visible devolve undefined → tratamos como visível (evita badge/switch contraditórios). */
+function normalizeGalleryRow(row: unknown): GalleryImage {
+  const r = row as Record<string, unknown>;
+  return {
+    id: r.id as string,
+    url: r.url as string,
+    category: r.category as string,
+    title: (r.title as string | null) ?? null,
+    description: (r.description as string | null) ?? null,
+    display_order: (r.display_order as number | null) ?? null,
+    is_visible: r.is_visible !== false,
+  };
+}
+
 const AdminGallery = () => {
   const [images, setImages] = useState<GalleryImage[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -73,8 +87,13 @@ const AdminGallery = () => {
         firstRowIsVisible: sample?.is_visible,
         firstRowId: sample?.id,
       });
+      if (sample && !Object.prototype.hasOwnProperty.call(sample, "is_visible")) {
+        console.warn(
+          `${LOG} Coluna is_visible ausente na API. Abra o Supabase cujo URL = VITE_SUPABASE_URL na Vercel, rode o ALTER em gallery_images e NOTIFY pgrst, 'reload schema';`,
+        );
+      }
     }
-    setImages(data || []);
+    setImages((data || []).map(normalizeGalleryRow));
   };
 
   useEffect(() => {
@@ -276,7 +295,7 @@ const AdminGallery = () => {
                   <Badge variant="secondary" className="text-[10px] shrink-0">
                     {img.category}
                   </Badge>
-                  {!img.is_visible && (
+                  {img.is_visible === false && (
                     <Badge variant="outline" className="text-[10px] shrink-0">
                       Oculta no site
                     </Badge>

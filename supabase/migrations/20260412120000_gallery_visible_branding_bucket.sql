@@ -26,3 +26,6 @@ DROP POLICY IF EXISTS "Admins can update branding files" ON storage.objects;
 CREATE POLICY "Admins can update branding files"
 ON storage.objects FOR UPDATE
 USING (bucket_id = 'branding' AND public.has_role(auth.uid(), 'admin'));
+
+-- Atualiza o cache do PostgREST para a coluna is_visible (evita PGRST204 "not in schema cache").
+NOTIFY pgrst, 'reload schema';

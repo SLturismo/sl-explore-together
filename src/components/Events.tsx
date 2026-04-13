@@ -18,6 +18,7 @@ type EventRow = {
 };
 
 const Events = () => {
+  const visible = useSectionVisible("events");
   const [events, setEvents] = useState<EventRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [titlePrefix, setTitlePrefix] = useState("Eventos &");

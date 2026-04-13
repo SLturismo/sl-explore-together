@@ -16,6 +16,8 @@ const defaultText1 = "A SL Turismo nasceu do sonho de criar experiências de via
 const defaultText2 = "Acreditamos que toda mulher merece viver aventuras inesquecíveis, seja sozinha, com amigas ou em grupo. Nossos roteiros são cuidadosamente planejados para oferecer segurança, conforto e momentos que ficarão para sempre na memória.";
 
 const About = () => {
+  const visible = useSectionVisible("about");
+  const { logoSrc } = usePublicSite();
   const [titlePrefix, setTitlePrefix] = useState("Sobre a");
   const [titleHighlight, setTitleHighlight] = useState("SL Turismo");
   const [text1, setText1] = useState(defaultText1);

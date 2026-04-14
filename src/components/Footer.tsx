@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { Instagram, Phone, Mail, MapPin, ShieldCheck, Lock } from "lucide-react";
+import { Facebook, Instagram, Linkedin, Phone, Mail, MapPin, ShieldCheck, Lock, Youtube } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { usePublicSite, useSectionVisible } from "@/contexts/PublicSiteContext";
+import { safeHttpUrl } from "@/lib/social-url";
 
 const Footer = () => {
   const { logoSrc } = usePublicSite();
@@ -20,8 +21,13 @@ const Footer = () => {
     description: "Viagens exclusivas e eventos para quem sonha em explorar o mundo com liberdade e segurança.",
     phone: "(67) 99953-5548",
     phone_link: "5567999535548",
+    whatsapp_prefill: "Olá! Gostaria de saber mais sobre as viagens da SL Turismo.",
     email_addr: "contato@slturismo.com.br",
     city: "Campo Grande - MS",
+    social_instagram: "",
+    social_facebook: "",
+    social_youtube: "",
+    social_linkedin: "",
     navs: ["Início", "Galeria", "Viagens & Eventos", "Eventos", "Sobre"],
   });
 
@@ -45,8 +51,13 @@ const Footer = () => {
               description: c.description || p.description,
               phone: c.phone || p.phone,
               phone_link: c.phone_link || p.phone_link,
+              whatsapp_prefill: typeof c.whatsapp_prefill === "string" && c.whatsapp_prefill.trim() ? c.whatsapp_prefill : p.whatsapp_prefill,
               email_addr: c.email || p.email_addr,
               city: c.city || p.city,
+              social_instagram: typeof c.social_instagram === "string" ? c.social_instagram : p.social_instagram,
+              social_facebook: typeof c.social_facebook === "string" ? c.social_facebook : p.social_facebook,
+              social_youtube: typeof c.social_youtube === "string" ? c.social_youtube : p.social_youtube,
+              social_linkedin: typeof c.social_linkedin === "string" ? c.social_linkedin : p.social_linkedin,
               navs: [c.nav1 || p.navs[0], c.nav2 || p.navs[1], c.nav3 || p.navs[2], c.nav4 || p.navs[3], c.nav5 || p.navs[4]],
             }));
           }
@@ -71,6 +82,18 @@ const Footer = () => {
   };
 
   const navHrefs = ["#inicio", "#galeria", "#planejar", "#eventos", "#sobre"];
+
+  const waDigits = content.phone_link.replace(/\D/g, "");
+  const waHref = waDigits
+    ? `https://wa.me/${waDigits}?text=${encodeURIComponent(content.whatsapp_prefill || "")}`
+    : null;
+
+  const socialEntries = [
+    { key: "ig", url: safeHttpUrl(content.social_instagram), Icon: Instagram, label: "Instagram" },
+    { key: "fb", url: safeHttpUrl(content.social_facebook), Icon: Facebook, label: "Facebook" },
+    { key: "yt", url: safeHttpUrl(content.social_youtube), Icon: Youtube, label: "YouTube" },
+    { key: "in", url: safeHttpUrl(content.social_linkedin), Icon: Linkedin, label: "LinkedIn" },
+  ].filter((s) => s.url);
 
   return (
     <>
@@ -107,15 +130,44 @@ const Footer = () => {
             <div>
               <h4 className="font-display text-lg font-semibold mb-4">Contato</h4>
               <div className="flex flex-col gap-3 text-sm text-primary-foreground/70">
-                <a href={`https://wa.me/${content.phone_link}`} className="flex items-center gap-2 hover:text-primary transition-colors">
-                  <Phone className="h-4 w-4" /> {content.phone}
+                {waHref ? (
+                  <a
+                    href={waHref}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 hover:text-primary transition-colors"
+                  >
+                    <Phone className="h-4 w-4" /> {content.phone}
+                  </a>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Phone className="h-4 w-4" /> {content.phone}
+                  </span>
+                )}
+                <a
+                  href={`mailto:${content.email_addr}`}
+                  className="flex items-center gap-2 hover:text-primary transition-colors"
+                >
+                  <Mail className="h-4 w-4" /> {content.email_addr}
                 </a>
-                <span className="flex items-center gap-2"><Mail className="h-4 w-4" /> {content.email_addr}</span>
                 <span className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {content.city}</span>
               </div>
-              <div className="flex gap-3 mt-4">
-                <a href="#" className="text-primary-foreground/70 hover:text-primary transition-colors"><Instagram className="h-5 w-5" /></a>
-              </div>
+              {socialEntries.length > 0 && (
+                <div className="flex flex-wrap gap-3 mt-4">
+                  {socialEntries.map(({ key, url, Icon, label }) => (
+                    <a
+                      key={key}
+                      href={url!}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-foreground/70 hover:text-primary transition-colors"
+                      aria-label={label}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

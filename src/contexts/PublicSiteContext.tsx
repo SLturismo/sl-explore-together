@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
+import { syncBrandingMetaTags, toAbsoluteAssetUrl } from "@/lib/branding-meta";
+import { readCachedLogoUrl, writeCachedLogoUrl } from "@/lib/logo-url-cache";
 
 export type SiteVisibilityKey =
   | "hero"
@@ -35,7 +37,7 @@ type PublicSiteContextValue = {
 const PublicSiteContext = createContext<PublicSiteContextValue | null>(null);
 
 export function PublicSiteProvider({ children }: { children: ReactNode }) {
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(() => readCachedLogoUrl());
   const [visibility, setVisibility] = useState<Record<SiteVisibilityKey, boolean>>(DEFAULT_VISIBILITY);
   const [loaded, setLoaded] = useState(false);
 
@@ -47,8 +49,13 @@ export function PublicSiteProvider({ children }: { children: ReactNode }) {
         supabase.from("site_content").select("content").eq("section_key", "visibility").maybeSingle(),
       ]);
       if (cancelled) return;
-      const b = brandingRes.data?.content as { logo_url?: string } | null;
-      if (b?.logo_url && typeof b.logo_url === "string") setLogoUrl(b.logo_url);
+      if (!brandingRes.error) {
+        const b = brandingRes.data?.content as { logo_url?: string } | null;
+        const next =
+          b?.logo_url && typeof b.logo_url === "string" && b.logo_url.trim() ? b.logo_url.trim() : null;
+        setLogoUrl(next);
+        writeCachedLogoUrl(next);
+      }
       const v = visRes.data?.content as Partial<Record<SiteVisibilityKey, boolean>> | null;
       if (v && typeof v === "object") {
         setVisibility({ ...DEFAULT_VISIBILITY, ...v });
@@ -61,6 +68,11 @@ export function PublicSiteProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logoSrc = logoUrl?.trim() ? logoUrl : fallbackLogo;
+
+  useEffect(() => {
+    if (!loaded || typeof window === "undefined") return;
+    syncBrandingMetaTags(toAbsoluteAssetUrl(logoSrc));
+  }, [loaded, logoSrc]);
 
   const value = useMemo(
     () => ({ logoUrl, logoSrc, visibility, loaded }),

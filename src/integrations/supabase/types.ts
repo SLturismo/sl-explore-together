@@ -54,30 +54,51 @@ export type Database = {
         Row: {
           category: string
           created_at: string
+          crop_h: number | null
+          crop_w: number | null
+          crop_x: number | null
+          crop_y: number | null
           description: string | null
           display_order: number | null
+          focal_x: number | null
+          focal_y: number | null
           id: string
           is_visible: boolean
+          object_position: string | null
           title: string | null
           url: string
         }
         Insert: {
           category: string
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           description?: string | null
           display_order?: number | null
+          focal_x?: number | null
+          focal_y?: number | null
           id?: string
           is_visible?: boolean
+          object_position?: string | null
           title?: string | null
           url: string
         }
         Update: {
           category?: string
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           description?: string | null
           display_order?: number | null
+          focal_x?: number | null
+          focal_y?: number | null
           id?: string
           is_visible?: boolean
+          object_position?: string | null
           title?: string | null
           url?: string
         }

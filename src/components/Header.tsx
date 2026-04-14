@@ -18,6 +18,7 @@ const Header = () => {
   const [navItems, setNavItems] = useState(defaultNavItems);
   const [contactLabel, setContactLabel] = useState("Contato");
   const [phoneLink, setPhoneLink] = useState("5567999535548");
+  const [waPrefill, setWaPrefill] = useState("Olá! Gostaria de saber mais sobre as viagens da SL Turismo.");
 
   useEffect(() => {
     Promise.all([
@@ -32,11 +33,15 @@ const Header = () => {
         if (c.contact_button) setContactLabel(c.contact_button);
       }
       if (footerData?.content) {
-        const f = footerData.content as any;
-        if (f.phone_link) setPhoneLink(f.phone_link);
+        const f = footerData.content as Record<string, string>;
+        const digits = (f.phone_link || "").replace(/\D/g, "");
+        if (digits) setPhoneLink(digits);
+        if (typeof f.whatsapp_prefill === "string" && f.whatsapp_prefill.trim()) setWaPrefill(f.whatsapp_prefill.trim());
       }
     });
   }, []);
+
+  const waHref = `https://wa.me/${phoneLink.replace(/\D/g, "")}?text=${encodeURIComponent(waPrefill)}`;
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
@@ -52,7 +57,7 @@ const Header = () => {
         </nav>
 
         <div className="hidden md:block shrink-0">
-          <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
+          <a href={waHref} target="_blank" rel="noopener noreferrer">
             <Button size="sm" className="bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
           </a>
         </div>
@@ -68,7 +73,7 @@ const Header = () => {
             {navItems.map((item) => (
               <a key={item.href} href={item.href} className="text-sm font-medium text-foreground/80 hover:text-primary py-2" onClick={() => setIsOpen(false)}>{item.label}</a>
             ))}
-            <a href={`https://wa.me/${phoneLink}`} target="_blank" rel="noopener noreferrer">
+            <a href={waHref} target="_blank" rel="noopener noreferrer">
               <Button size="sm" className="w-full bg-primary hover:bg-primary/90 gap-1"><Phone className="h-3 w-3" />{contactLabel}</Button>
             </a>
           </nav>

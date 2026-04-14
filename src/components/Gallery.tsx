@@ -1,9 +1,12 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSectionVisible } from "@/contexts/PublicSiteContext";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { normalizeGalleryObjectPosition } from "@/lib/gallery-display";
+import { parseCropFromRow, type CropRectPct } from "@/lib/gallery-crop";
+import { GalleryCoverThumb } from "@/components/GalleryCoverThumb";
 
 type GalleryRow = {
   id: string;
@@ -12,6 +15,9 @@ type GalleryRow = {
   title: string | null;
   description: string | null;
   display_order: number | null;
+  focal_x?: number | null;
+  focal_y?: number | null;
+  object_position?: string | null;
 };
 
 const Gallery = () => {
@@ -21,6 +27,7 @@ const Gallery = () => {
   const [titleHighlight, setTitleHighlight] = useState("Viagens");
   const [subtitle, setSubtitle] = useState("Inspire-se com destinos incríveis escolhidos por mulheres como você");
   const [imageFit, setImageFit] = useState<"cover" | "contain">("cover");
+  const [objectPosition, setObjectPosition] = useState("center");
   const [images, setImages] = useState<GalleryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
@@ -38,6 +45,7 @@ const Gallery = () => {
           if (c.title_highlight) setTitleHighlight(c.title_highlight);
           if (c.subtitle) setSubtitle(c.subtitle);
           if (c.image_fit === "contain" || c.image_fit === "cover") setImageFit(c.image_fit);
+          if (c.object_position) setObjectPosition(normalizeGalleryObjectPosition(c.object_position));
         }
       });
   }, []);
@@ -47,7 +55,9 @@ const Gallery = () => {
       setLoading(true);
       const { data } = await supabase
         .from("gallery_images")
-        .select("id, url, category, title, description, display_order")
+        .select(
+          "id, url, category, title, description, display_order, focal_x, focal_y, object_position, crop_x, crop_y, crop_w, crop_h",
+        )
         .eq("is_visible", true)
         .order("display_order", { ascending: true })
         .order("created_at", { ascending: true });
@@ -71,6 +81,19 @@ const Gallery = () => {
   const filtered = active === "Todas" ? images : images.filter((i) => i.category === active);
 
   const thumbObjectClass = imageFit === "contain" ? "object-contain bg-card" : "object-cover";
+
+  const thumbFocalStyleFor = (img: GalleryRow, crop: CropRectPct | null): CSSProperties | undefined => {
+    if (imageFit !== "cover") return undefined;
+    if (crop) return undefined;
+    const fx = img.focal_x;
+    const fy = img.focal_y;
+    if (fx != null && fy != null) {
+      return { objectPosition: `${fx}% ${fy}%` };
+    }
+    const raw = img.object_position?.trim();
+    const pos = normalizeGalleryObjectPosition(raw || objectPosition);
+    return { objectPosition: pos };
+  };
 
   const openAt = useCallback((id: string) => {
     const i = filtered.findIndex((img) => img.id === id);
@@ -137,20 +160,25 @@ const Gallery = () => {
           <p className="text-center text-muted-foreground py-12">Nenhuma foto nesta categoria.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filtered.map((img) => (
+            {filtered.map((img) => {
+              const thumbCrop = parseCropFromRow(img);
+              return (
               <button
                 key={img.id}
                 type="button"
                 onClick={() => openAt(img.id)}
                 className="group relative rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-shadow text-left w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <img
+                <GalleryCoverThumb
                   src={img.url}
                   alt={img.title || "Galeria"}
-                  loading="lazy"
+                  crop={thumbCrop}
+                  className="h-64 w-full group-hover:scale-105 transition-transform duration-500"
+                  objectCoverClass={thumbObjectClass}
+                  focalStyle={thumbFocalStyleFor(img, thumbCrop)}
+                  imageFit={imageFit}
                   width={800}
                   height={600}
-                  className={`w-full h-64 ${thumbObjectClass} group-hover:scale-105 transition-transform duration-500`}
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-foreground/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4 pointer-events-none">
                   <div>
@@ -159,16 +187,21 @@ const Gallery = () => {
                   </div>
                 </div>
               </button>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>
 
       <Dialog open={lightboxIndex !== null} onOpenChange={(open) => !open && closeLightbox()}>
-        <DialogContent className="max-w-4xl w-[95vw] p-0 gap-0 overflow-hidden border-border bg-card">
+        <DialogContent
+          overlayClassName="bg-black/45 backdrop-blur-[2px]"
+          closeClassName="right-3 top-3 z-20 inline-flex h-9 w-9 items-center justify-center rounded-full border-0 bg-black/40 p-0 text-white opacity-100 shadow-md hover:bg-black/55 hover:text-white data-[state=open]:bg-black/40 data-[state=open]:text-white"
+          className="max-w-4xl w-[95vw] p-0 gap-0 overflow-hidden border-0 bg-transparent shadow-none sm:rounded-xl"
+        >
           {current && (
             <div className="flex flex-col max-h-[90vh]">
-              <div className="relative flex-1 min-h-0 bg-foreground/95 flex items-center justify-center p-2 sm:p-4">
+              <div className="relative flex-1 min-h-0 bg-transparent flex items-center justify-center p-2 sm:p-4">
                 {filtered.length > 1 && (
                   <>
                     <Button
@@ -207,7 +240,7 @@ const Gallery = () => {
                   className="max-h-[min(70vh,720px)] w-full object-contain"
                 />
               </div>
-              <div className="p-4 sm:p-5 border-t border-border bg-card">
+              <div className="p-4 sm:p-5 rounded-b-xl border-t border-border/60 bg-background/85 backdrop-blur-md supports-[backdrop-filter]:bg-background/70">
                 <h3 className="font-display text-lg font-semibold text-foreground">{current.title || current.category}</h3>
                 {current.description && <p className="text-muted-foreground text-sm mt-2 leading-relaxed">{current.description}</p>}
               </div>

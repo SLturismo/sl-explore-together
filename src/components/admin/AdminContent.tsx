@@ -11,6 +11,7 @@ import { Save, Loader2, Upload } from "lucide-react";
 import type { SiteVisibilityKey } from "@/contexts/PublicSiteContext";
 import { DEFAULT_VISIBILITY } from "@/contexts/PublicSiteContext";
 import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
+import { GALLERY_OBJECT_POSITION_OPTIONS, normalizeGalleryObjectPosition } from "@/lib/gallery-display";
 
 type SectionData = Record<string, string>;
 
@@ -83,11 +84,33 @@ const initialSections: Record<string, SectionData> = {
   branding: { logo_url: "" },
   hero: { title: "Nunca é tarde para", highlight: "viver seus sonhos", subtitle: "Viagens exclusivas para mulheres que buscam liberdade, segurança e experiências inesquecíveis.", button_text: "✈️ Planejar minha viagem" },
   about: { title_prefix: "Sobre a", title_highlight: "SL Turismo", text1: "", text2: "", diff1_title: "Feito por Mulheres", diff1_desc: "Entendemos suas necessidades e criamos experiências que fazem sentido para você.", diff2_title: "Segurança em Primeiro Lugar", diff2_desc: "Cada detalhe é planejado para que você viaje com tranquilidade e confiança.", diff3_title: "Experiências Únicas", diff3_desc: "Roteiros personalizados que vão além do turismo convencional.", diff4_title: "Comunidade", diff4_desc: "Conecte-se com mulheres incríveis que compartilham a paixão por viajar." },
-  gallery: { title_prefix: "Galeria de", title_highlight: "Viagens", subtitle: "Inspire-se com destinos incríveis escolhidos por mulheres como você", image_fit: "cover" },
+  gallery: {
+    title_prefix: "Galeria de",
+    title_highlight: "Viagens",
+    subtitle: "Inspire-se com destinos incríveis escolhidos por mulheres como você",
+    image_fit: "cover",
+    object_position: "center",
+  },
   travel_form: { title_prefix: "Planeje sua", title_highlight: "Viagem ou Evento", subtitle: "Conte-nos seus sonhos e criaremos a viagem ou evento perfeito para você", button_text: "✈️ Enviar Solicitação" },
   events: { title_prefix: "Eventos &", title_highlight: "Experiências", subtitle: "Viagens em grupo e tours exclusivos para mulheres que querem explorar o mundo juntas" },
   newsletter: { title: "Receba nossas novidades", subtitle: "Fique por dentro dos próximos destinos e eventos exclusivos", button_text: "Assinar" },
-  footer: { description: "Viagens exclusivas e eventos para quem sonha em explorar o mundo com liberdade e segurança.", phone: "(67) 99953-5548", phone_link: "5567999535548", email: "contato@slturismo.com.br", city: "Campo Grande - MS", nav1: "Início", nav2: "Galeria", nav3: "Viagens & Eventos", nav4: "Eventos", nav5: "Sobre" },
+  footer: {
+    description: "Viagens exclusivas e eventos para quem sonha em explorar o mundo com liberdade e segurança.",
+    phone: "(67) 99953-5548",
+    phone_link: "5567999535548",
+    whatsapp_prefill: "Olá! Gostaria de saber mais sobre as viagens da SL Turismo.",
+    email: "contato@slturismo.com.br",
+    city: "Campo Grande - MS",
+    social_instagram: "",
+    social_facebook: "",
+    social_youtube: "",
+    social_linkedin: "",
+    nav1: "Início",
+    nav2: "Galeria",
+    nav3: "Viagens & Eventos",
+    nav4: "Eventos",
+    nav5: "Sobre",
+  },
   header: { menu_inicio: "Início", menu_galeria: "Galeria", menu_planejar: "Viagens & Eventos", menu_eventos: "Eventos", menu_sobre: "Sobre", contact_button: "Contato" },
 };
 
@@ -349,6 +372,27 @@ const AdminContent = () => {
             </SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Ponto de foco ao cortar (modo «Preencher o quadro»)</Label>
+          <Select
+            value={normalizeGalleryObjectPosition(sections.gallery?.object_position)}
+            onValueChange={(v) => updateField("gallery", "object_position", v)}
+          >
+            <SelectTrigger className="bg-background">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {GALLERY_OBJECT_POSITION_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            Com «Mostrar foto inteira», a posição tem pouco efeito. Com «Preencher o quadro», escolhe que zona da foto fica visível quando há corte.
+          </p>
+        </div>
       </SectionCard>
 
       {/* Travel Form */}
@@ -399,13 +443,40 @@ const AdminContent = () => {
       </SectionCard>
 
       {/* Footer */}
-      <SectionCard sectionKey="footer" title="Rodapé" emoji="📍">
+      <SectionCard sectionKey="footer" title="Rodapé, contacto e redes sociais" emoji="📍">
         <Field section="footer" field="description" label="Descrição da empresa" multiline />
+        <p className="text-xs font-medium text-muted-foreground pt-1 border-t border-border">WhatsApp (cabeçalho, rodapé e botão flutuante)</p>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="footer" field="phone" label="Telefone (exibição)" />
-          <Field section="footer" field="phone_link" label="Telefone (WhatsApp, só números)" />
+          <Field section="footer" field="phone" label="Telefone — texto visível (ex.: (67) 99999-9999)" />
+          <Field
+            section="footer"
+            field="phone_link"
+            label="WhatsApp — só números, com código do país (ex.: 5567999535548)"
+          />
+        </div>
+        <Field
+          section="footer"
+          field="whatsapp_prefill"
+          label="Mensagem inicial no WhatsApp (botão flutuante e links)"
+          multiline
+        />
+        <p className="text-[11px] text-muted-foreground -mt-1">
+          Usada no texto pré-preenchido ao abrir o WhatsApp. O número acima é o que entra em{" "}
+          <code className="rounded bg-muted px-1">wa.me</code>.
+        </p>
+        <div className="grid grid-cols-2 gap-3">
           <Field section="footer" field="email" label="E-mail" />
           <Field section="footer" field="city" label="Cidade" />
+        </div>
+        <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Redes sociais (ícones no rodapé)</p>
+        <p className="text-[11px] text-muted-foreground -mt-1 mb-1">
+          Cole o link completo (ex.: <span className="whitespace-nowrap">https://instagram.com/sua_pagina</span>). Deixe em branco para ocultar o ícone.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Field section="footer" field="social_instagram" label="Instagram (URL)" />
+          <Field section="footer" field="social_facebook" label="Facebook (URL)" />
+          <Field section="footer" field="social_youtube" label="YouTube (URL)" />
+          <Field section="footer" field="social_linkedin" label="LinkedIn (URL)" />
         </div>
         <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Links de navegação do rodapé</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">

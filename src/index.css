@@ -126,3 +126,22 @@ html.admin-route #root {
   overflow: hidden;
   overscroll-behavior: none;
 }
+
+/* Barra de scroll mais fina na coluna do painel (Windows/Edge mostravam faixa muito larga). */
+html.admin-route .admin-main-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--border)) transparent;
+}
+
+html.admin-route .admin-main-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+html.admin-route .admin-main-scroll::-webkit-scrollbar-thumb {
+  border-radius: 9999px;
+  background: hsl(var(--border));
+}
+
+html.admin-route .admin-main-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}

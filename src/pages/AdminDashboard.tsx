@@ -158,7 +158,10 @@ const AdminDashboard = () => {
 
       {/* Main Content: scroll aqui (não na janela) para listas longas e Select/Dialog não puxarem o documento */}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="mx-auto max-h-full w-full max-w-6xl flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-5 sm:p-6 lg:p-8">
+        <div
+          data-admin-main-scroll
+          className="admin-main-scroll mx-auto max-h-full w-full max-w-6xl flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-5 sm:p-6 lg:p-8"
+        >
           <header className="rounded-xl border border-border/80 bg-card px-5 py-4 shadow-sm flex items-start gap-4">
             {currentItem && (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

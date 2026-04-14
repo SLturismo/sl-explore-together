@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEventHandler } from "react";
+import { useEffect, useRef, useState, type ChangeEventHandler, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,79 @@ import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
 import { GALLERY_OBJECT_POSITION_OPTIONS, normalizeGalleryObjectPosition } from "@/lib/gallery-display";
 
 type SectionData = Record<string, string>;
+
+const ADMIN_MAIN_SCROLL_SEL = "[data-admin-main-scroll]";
+
+function stashAdminMainScrollTop(): number {
+  const el = document.querySelector(ADMIN_MAIN_SCROLL_SEL) as HTMLElement | null;
+  return el?.scrollTop ?? 0;
+}
+
+function restoreAdminMainScrollTop(y: number) {
+  const apply = () => {
+    const el = document.querySelector(ADMIN_MAIN_SCROLL_SEL) as HTMLElement | null;
+    if (el) el.scrollTop = y;
+  };
+  apply();
+  requestAnimationFrame(apply);
+  requestAnimationFrame(() => requestAnimationFrame(apply));
+}
+
+/** Fora do AdminContent: evita remontar inputs a cada tecla (scroll saltava para o topo). */
+function ContentField({
+  label,
+  value,
+  onChange,
+  multiline,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  multiline?: boolean;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
+      {multiline ? (
+        <Textarea value={value} onChange={(ev) => onChange(ev.target.value)} rows={3} className="bg-background" />
+      ) : (
+        <Input value={value} onChange={(ev) => onChange(ev.target.value)} className="bg-background" />
+      )}
+    </div>
+  );
+}
+
+function ContentSectionCard({
+  title,
+  emoji,
+  isSaving,
+  onSave,
+  children,
+}: {
+  title: string;
+  emoji: string;
+  isSaving: boolean;
+  onSave: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <div className="bg-card rounded-xl border border-border/80 p-5 shadow-sm">
+      <div className="flex items-center justify-between mb-4 gap-3">
+        <h3 className="text-base font-semibold text-foreground tracking-tight">
+          <span className="mr-2" aria-hidden>
+            {emoji}
+          </span>
+          {title}
+        </h3>
+        <Button size="sm" onClick={onSave} disabled={isSaving} className="gap-1.5">
+          {isSaving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+          {isSaving ? "Salvando..." : "Salvar"}
+        </Button>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </div>
+  );
+}
 
 /** Bucket e caminho interno a partir da URL pública (…/object/public/{bucket}/…). */
 function logoStorageRefFromPublicUrl(url: string): { bucket: string; objectPath: string } | null {
@@ -148,6 +221,7 @@ const AdminContent = () => {
   }, []);
 
   const save = async (key: string) => {
+    const scrollY = stashAdminMainScrollTop();
     setSaving(key);
     const content = sections[key];
     const { data: existing } = await supabase.from("site_content").select("id").eq("section_key", key).maybeSingle();
@@ -158,9 +232,11 @@ const AdminContent = () => {
     }
     setSaving(null);
     toast({ title: "Conteúdo salvo com sucesso!" });
+    restoreAdminMainScrollTop(scrollY);
   };
 
   const saveVisibility = async () => {
+    const scrollY = stashAdminMainScrollTop();
     setSaving("visibility");
     const key = "visibility";
     const { data: existing } = await supabase.from("site_content").select("id").eq("section_key", key).maybeSingle();
@@ -171,6 +247,7 @@ const AdminContent = () => {
     }
     setSaving(null);
     toast({ title: "Visibilidade do site salva!" });
+    restoreAdminMainScrollTop(scrollY);
   };
 
   const handleLogoUpload: ChangeEventHandler<HTMLInputElement> = async (e) => {
@@ -257,33 +334,6 @@ const AdminContent = () => {
 
   const logoPreview = sections.branding?.logo_url?.trim() ? sections.branding.logo_url : fallbackLogo;
 
-  const Field = ({ section, field, label, multiline }: { section: string; field: string; label: string; multiline?: boolean }) => (
-    <div className="space-y-1.5">
-      <Label className="text-xs font-medium text-muted-foreground">{label}</Label>
-      {multiline ? (
-        <Textarea value={sections[section]?.[field] || ""} onChange={(ev) => updateField(section, field, ev.target.value)} rows={3} className="bg-background" />
-      ) : (
-        <Input value={sections[section]?.[field] || ""} onChange={(ev) => updateField(section, field, ev.target.value)} className="bg-background" />
-      )}
-    </div>
-  );
-
-  const SectionCard = ({ sectionKey, title, emoji, children }: { sectionKey: string; title: string; emoji: string; children: React.ReactNode }) => (
-    <div className="bg-card rounded-xl border border-border/80 p-5 shadow-sm">
-      <div className="flex items-center justify-between mb-4 gap-3">
-        <h3 className="text-base font-semibold text-foreground tracking-tight">
-          <span className="mr-2" aria-hidden>{emoji}</span>
-          {title}
-        </h3>
-        <Button size="sm" onClick={() => save(sectionKey)} disabled={saving === sectionKey} className="gap-1.5">
-          {saving === sectionKey ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-          {saving === sectionKey ? "Salvando..." : "Salvar"}
-        </Button>
-      </div>
-      <div className="space-y-3">{children}</div>
-    </div>
-  );
-
   return (
     <div className="space-y-5">
       <div className="rounded-xl border border-border/80 bg-primary/[0.04] px-4 py-3 text-sm text-muted-foreground">
@@ -293,7 +343,9 @@ const AdminContent = () => {
       {/* Logo */}
       <div className="bg-card rounded-xl border border-border/80 p-5 shadow-sm">
         <h3 className="text-base font-semibold text-foreground tracking-tight mb-1">
-          <span className="mr-2" aria-hidden>✨</span>
+          <span className="mr-2" aria-hidden>
+            ✨
+          </span>
           Logo da agência
         </h3>
         <p className="text-xs text-muted-foreground mb-4">
@@ -334,32 +386,32 @@ const AdminContent = () => {
       </div>
 
       {/* Header */}
-      <SectionCard sectionKey="header" title="Menu de Navegação" emoji="🧭">
+      <ContentSectionCard title="Menu de Navegação" emoji="🧭" isSaving={saving === "header"} onSave={() => save("header")}>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Field section="header" field="menu_inicio" label="Início" />
-          <Field section="header" field="menu_galeria" label="Galeria" />
-          <Field section="header" field="menu_planejar" label="Planejar" />
-          <Field section="header" field="menu_eventos" label="Eventos" />
-          <Field section="header" field="menu_sobre" label="Sobre" />
-          <Field section="header" field="contact_button" label="Botão contato" />
+          <ContentField label="Início" value={sections.header?.menu_inicio || ""} onChange={(v) => updateField("header", "menu_inicio", v)} />
+          <ContentField label="Galeria" value={sections.header?.menu_galeria || ""} onChange={(v) => updateField("header", "menu_galeria", v)} />
+          <ContentField label="Planejar" value={sections.header?.menu_planejar || ""} onChange={(v) => updateField("header", "menu_planejar", v)} />
+          <ContentField label="Eventos" value={sections.header?.menu_eventos || ""} onChange={(v) => updateField("header", "menu_eventos", v)} />
+          <ContentField label="Sobre" value={sections.header?.menu_sobre || ""} onChange={(v) => updateField("header", "menu_sobre", v)} />
+          <ContentField label="Botão contato" value={sections.header?.contact_button || ""} onChange={(v) => updateField("header", "contact_button", v)} />
         </div>
-      </SectionCard>
+      </ContentSectionCard>
 
       {/* Hero */}
-      <SectionCard sectionKey="hero" title="Início (Hero)" emoji="🏠">
-        <Field section="hero" field="title" label="Título principal" />
-        <Field section="hero" field="highlight" label="Destaque (linha colorida)" />
-        <Field section="hero" field="subtitle" label="Subtítulo" multiline />
-        <Field section="hero" field="button_text" label="Texto do botão" />
-      </SectionCard>
+      <ContentSectionCard title="Início (Hero)" emoji="🏠" isSaving={saving === "hero"} onSave={() => save("hero")}>
+        <ContentField label="Título principal" value={sections.hero?.title || ""} onChange={(v) => updateField("hero", "title", v)} />
+        <ContentField label="Destaque (linha colorida)" value={sections.hero?.highlight || ""} onChange={(v) => updateField("hero", "highlight", v)} />
+        <ContentField label="Subtítulo" value={sections.hero?.subtitle || ""} onChange={(v) => updateField("hero", "subtitle", v)} multiline />
+        <ContentField label="Texto do botão" value={sections.hero?.button_text || ""} onChange={(v) => updateField("hero", "button_text", v)} />
+      </ContentSectionCard>
 
       {/* Gallery */}
-      <SectionCard sectionKey="gallery" title="Galeria" emoji="📸">
+      <ContentSectionCard title="Galeria" emoji="📸" isSaving={saving === "gallery"} onSave={() => save("gallery")}>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="gallery" field="title_prefix" label="Título (parte 1)" />
-          <Field section="gallery" field="title_highlight" label="Título (destaque)" />
+          <ContentField label="Título (parte 1)" value={sections.gallery?.title_prefix || ""} onChange={(v) => updateField("gallery", "title_prefix", v)} />
+          <ContentField label="Título (destaque)" value={sections.gallery?.title_highlight || ""} onChange={(v) => updateField("gallery", "title_highlight", v)} />
         </div>
-        <Field section="gallery" field="subtitle" label="Subtítulo" multiline />
+        <ContentField label="Subtítulo" value={sections.gallery?.subtitle || ""} onChange={(v) => updateField("gallery", "subtitle", v)} multiline />
         <div className="space-y-1.5">
           <Label className="text-xs font-medium text-muted-foreground">Miniaturas na grelha do site</Label>
           <Select value={sections.gallery?.image_fit === "contain" ? "contain" : "cover"} onValueChange={(v) => updateField("gallery", "image_fit", v)}>
@@ -393,106 +445,111 @@ const AdminContent = () => {
             Com «Mostrar foto inteira», a posição tem pouco efeito. Com «Preencher o quadro», escolhe que zona da foto fica visível quando há corte.
           </p>
         </div>
-      </SectionCard>
+      </ContentSectionCard>
 
       {/* Travel Form */}
-      <SectionCard sectionKey="travel_form" title="Formulário de Viagem" emoji="✈️">
+      <ContentSectionCard title="Formulário de Viagem" emoji="✈️" isSaving={saving === "travel_form"} onSave={() => save("travel_form")}>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="travel_form" field="title_prefix" label="Título (parte 1)" />
-          <Field section="travel_form" field="title_highlight" label="Título (destaque)" />
+          <ContentField label="Título (parte 1)" value={sections.travel_form?.title_prefix || ""} onChange={(v) => updateField("travel_form", "title_prefix", v)} />
+          <ContentField label="Título (destaque)" value={sections.travel_form?.title_highlight || ""} onChange={(v) => updateField("travel_form", "title_highlight", v)} />
         </div>
-        <Field section="travel_form" field="subtitle" label="Subtítulo" multiline />
-        <Field section="travel_form" field="button_text" label="Texto do botão" />
-      </SectionCard>
+        <ContentField label="Subtítulo" value={sections.travel_form?.subtitle || ""} onChange={(v) => updateField("travel_form", "subtitle", v)} multiline />
+        <ContentField label="Texto do botão" value={sections.travel_form?.button_text || ""} onChange={(v) => updateField("travel_form", "button_text", v)} />
+      </ContentSectionCard>
 
       {/* Events */}
-      <SectionCard sectionKey="events" title="Eventos & Experiências" emoji="🎪">
+      <ContentSectionCard title="Eventos & Experiências" emoji="🎪" isSaving={saving === "events"} onSave={() => save("events")}>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="events" field="title_prefix" label="Título (parte 1)" />
-          <Field section="events" field="title_highlight" label="Título (destaque)" />
+          <ContentField label="Título (parte 1)" value={sections.events?.title_prefix || ""} onChange={(v) => updateField("events", "title_prefix", v)} />
+          <ContentField label="Título (destaque)" value={sections.events?.title_highlight || ""} onChange={(v) => updateField("events", "title_highlight", v)} />
         </div>
-        <Field section="events" field="subtitle" label="Subtítulo" multiline />
-      </SectionCard>
+        <ContentField label="Subtítulo" value={sections.events?.subtitle || ""} onChange={(v) => updateField("events", "subtitle", v)} multiline />
+      </ContentSectionCard>
 
       {/* About */}
-      <SectionCard sectionKey="about" title="Sobre a SL Turismo" emoji="ℹ️">
+      <ContentSectionCard title="Sobre a SL Turismo" emoji="ℹ️" isSaving={saving === "about"} onSave={() => save("about")}>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="about" field="title_prefix" label="Título (parte 1)" />
-          <Field section="about" field="title_highlight" label="Título (destaque)" />
+          <ContentField label="Título (parte 1)" value={sections.about?.title_prefix || ""} onChange={(v) => updateField("about", "title_prefix", v)} />
+          <ContentField label="Título (destaque)" value={sections.about?.title_highlight || ""} onChange={(v) => updateField("about", "title_highlight", v)} />
         </div>
-        <Field section="about" field="text1" label="Parágrafo 1" multiline />
-        <Field section="about" field="text2" label="Parágrafo 2" multiline />
+        <ContentField label="Parágrafo 1" value={sections.about?.text1 || ""} onChange={(v) => updateField("about", "text1", v)} multiline />
+        <ContentField label="Parágrafo 2" value={sections.about?.text2 || ""} onChange={(v) => updateField("about", "text2", v)} multiline />
         <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Diferenciais</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field section="about" field="diff1_title" label="Diferencial 1 - Título" />
-          <Field section="about" field="diff1_desc" label="Diferencial 1 - Descrição" />
-          <Field section="about" field="diff2_title" label="Diferencial 2 - Título" />
-          <Field section="about" field="diff2_desc" label="Diferencial 2 - Descrição" />
-          <Field section="about" field="diff3_title" label="Diferencial 3 - Título" />
-          <Field section="about" field="diff3_desc" label="Diferencial 3 - Descrição" />
-          <Field section="about" field="diff4_title" label="Diferencial 4 - Título" />
-          <Field section="about" field="diff4_desc" label="Diferencial 4 - Descrição" />
+          <ContentField label="Diferencial 1 - Título" value={sections.about?.diff1_title || ""} onChange={(v) => updateField("about", "diff1_title", v)} />
+          <ContentField label="Diferencial 1 - Descrição" value={sections.about?.diff1_desc || ""} onChange={(v) => updateField("about", "diff1_desc", v)} />
+          <ContentField label="Diferencial 2 - Título" value={sections.about?.diff2_title || ""} onChange={(v) => updateField("about", "diff2_title", v)} />
+          <ContentField label="Diferencial 2 - Descrição" value={sections.about?.diff2_desc || ""} onChange={(v) => updateField("about", "diff2_desc", v)} />
+          <ContentField label="Diferencial 3 - Título" value={sections.about?.diff3_title || ""} onChange={(v) => updateField("about", "diff3_title", v)} />
+          <ContentField label="Diferencial 3 - Descrição" value={sections.about?.diff3_desc || ""} onChange={(v) => updateField("about", "diff3_desc", v)} />
+          <ContentField label="Diferencial 4 - Título" value={sections.about?.diff4_title || ""} onChange={(v) => updateField("about", "diff4_title", v)} />
+          <ContentField label="Diferencial 4 - Descrição" value={sections.about?.diff4_desc || ""} onChange={(v) => updateField("about", "diff4_desc", v)} />
         </div>
-      </SectionCard>
+      </ContentSectionCard>
 
       {/* Newsletter */}
-      <SectionCard sectionKey="newsletter" title="Newsletter" emoji="📬">
-        <Field section="newsletter" field="title" label="Título" />
-        <Field section="newsletter" field="subtitle" label="Subtítulo" />
-        <Field section="newsletter" field="button_text" label="Texto do botão" />
-      </SectionCard>
+      <ContentSectionCard title="Newsletter" emoji="📬" isSaving={saving === "newsletter"} onSave={() => save("newsletter")}>
+        <ContentField label="Título" value={sections.newsletter?.title || ""} onChange={(v) => updateField("newsletter", "title", v)} />
+        <ContentField label="Subtítulo" value={sections.newsletter?.subtitle || ""} onChange={(v) => updateField("newsletter", "subtitle", v)} />
+        <ContentField label="Texto do botão" value={sections.newsletter?.button_text || ""} onChange={(v) => updateField("newsletter", "button_text", v)} />
+      </ContentSectionCard>
 
       {/* Footer */}
-      <SectionCard sectionKey="footer" title="Rodapé, contacto e redes sociais" emoji="📍">
-        <Field section="footer" field="description" label="Descrição da empresa" multiline />
+      <ContentSectionCard title="Rodapé, contacto e redes sociais" emoji="📍" isSaving={saving === "footer"} onSave={() => save("footer")}>
+        <ContentField label="Descrição da empresa" value={sections.footer?.description || ""} onChange={(v) => updateField("footer", "description", v)} multiline />
         <p className="text-xs font-medium text-muted-foreground pt-1 border-t border-border">WhatsApp (cabeçalho, rodapé e botão flutuante)</p>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="footer" field="phone" label="Telefone — texto visível (ex.: (67) 99999-9999)" />
-          <Field
-            section="footer"
-            field="phone_link"
+          <ContentField
+            label="Telefone — texto visível (ex.: (67) 99999-9999)"
+            value={sections.footer?.phone || ""}
+            onChange={(v) => updateField("footer", "phone", v)}
+          />
+          <ContentField
             label="WhatsApp — só números, com código do país (ex.: 5567999535548)"
+            value={sections.footer?.phone_link || ""}
+            onChange={(v) => updateField("footer", "phone_link", v)}
           />
         </div>
-        <Field
-          section="footer"
-          field="whatsapp_prefill"
+        <ContentField
           label="Mensagem inicial no WhatsApp (botão flutuante e links)"
+          value={sections.footer?.whatsapp_prefill || ""}
+          onChange={(v) => updateField("footer", "whatsapp_prefill", v)}
           multiline
         />
         <p className="text-[11px] text-muted-foreground -mt-1">
-          Usada no texto pré-preenchido ao abrir o WhatsApp. O número acima é o que entra em{" "}
-          <code className="rounded bg-muted px-1">wa.me</code>.
+          Usada no texto pré-preenchido ao abrir o WhatsApp. O número acima é o que entra em <code className="rounded bg-muted px-1">wa.me</code>.
         </p>
         <div className="grid grid-cols-2 gap-3">
-          <Field section="footer" field="email" label="E-mail" />
-          <Field section="footer" field="city" label="Cidade" />
+          <ContentField label="E-mail" value={sections.footer?.email || ""} onChange={(v) => updateField("footer", "email", v)} />
+          <ContentField label="Cidade" value={sections.footer?.city || ""} onChange={(v) => updateField("footer", "city", v)} />
         </div>
         <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Redes sociais (ícones no rodapé)</p>
         <p className="text-[11px] text-muted-foreground -mt-1 mb-1">
           Cole o link completo (ex.: <span className="whitespace-nowrap">https://instagram.com/sua_pagina</span>). Deixe em branco para ocultar o ícone.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field section="footer" field="social_instagram" label="Instagram (URL)" />
-          <Field section="footer" field="social_facebook" label="Facebook (URL)" />
-          <Field section="footer" field="social_youtube" label="YouTube (URL)" />
-          <Field section="footer" field="social_linkedin" label="LinkedIn (URL)" />
+          <ContentField label="Instagram (URL)" value={sections.footer?.social_instagram || ""} onChange={(v) => updateField("footer", "social_instagram", v)} />
+          <ContentField label="Facebook (URL)" value={sections.footer?.social_facebook || ""} onChange={(v) => updateField("footer", "social_facebook", v)} />
+          <ContentField label="YouTube (URL)" value={sections.footer?.social_youtube || ""} onChange={(v) => updateField("footer", "social_youtube", v)} />
+          <ContentField label="LinkedIn (URL)" value={sections.footer?.social_linkedin || ""} onChange={(v) => updateField("footer", "social_linkedin", v)} />
         </div>
         <p className="text-xs font-medium text-muted-foreground pt-2 border-t border-border">Links de navegação do rodapé</p>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <Field section="footer" field="nav1" label="Link 1" />
-          <Field section="footer" field="nav2" label="Link 2" />
-          <Field section="footer" field="nav3" label="Link 3" />
-          <Field section="footer" field="nav4" label="Link 4" />
-          <Field section="footer" field="nav5" label="Link 5" />
+          <ContentField label="Link 1" value={sections.footer?.nav1 || ""} onChange={(v) => updateField("footer", "nav1", v)} />
+          <ContentField label="Link 2" value={sections.footer?.nav2 || ""} onChange={(v) => updateField("footer", "nav2", v)} />
+          <ContentField label="Link 3" value={sections.footer?.nav3 || ""} onChange={(v) => updateField("footer", "nav3", v)} />
+          <ContentField label="Link 4" value={sections.footer?.nav4 || ""} onChange={(v) => updateField("footer", "nav4", v)} />
+          <ContentField label="Link 5" value={sections.footer?.nav5 || ""} onChange={(v) => updateField("footer", "nav5", v)} />
         </div>
-      </SectionCard>
+      </ContentSectionCard>
 
       {/* Visibilidade */}
       <div className="bg-card rounded-xl border border-border/80 p-5 shadow-sm">
         <div className="flex items-center justify-between mb-4 gap-3">
           <h3 className="text-base font-semibold text-foreground tracking-tight">
-            <span className="mr-2" aria-hidden>👁️</span>
+            <span className="mr-2" aria-hidden>
+              👁️
+            </span>
             Visibilidade no site público
           </h3>
           <Button size="sm" onClick={saveVisibility} disabled={saving === "visibility"} className="gap-1.5">

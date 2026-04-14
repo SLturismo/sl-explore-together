@@ -1,19 +1,17 @@
 {
-  "redirects": [
-    {
-      "source": "/(.*)",
-      "has": [{ "type": "host", "value": "slturismo.com" }],
-      "destination": "https://www.slturismo.com/$1",
-      "permanent": true
-    }
-  ],
+  "buildCommand": "npm run build",
+  "installCommand": "npm ci",
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
-          "value": "public, max-age=0, must-revalidate, s-maxage=0"
+          "value": "private, no-store, max-age=0, must-revalidate"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "no-store"
         }
       ]
     },
@@ -23,15 +21,26 @@
         {
           "key": "Cache-Control",
           "value": "public, max-age=31536000, immutable"
+        },
+        {
+          "key": "CDN-Cache-Control",
+          "value": "public, max-age=31536000, immutable"
         }
       ]
     }
   ],
+  "redirects": [
+    {
+      "source": "/(.*)",
+      "has": [{ "type": "host", "value": "slturismo.com" }],
+      "destination": "https://www.slturismo.com/$1",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     { "source": "/favicon.ico", "destination": "/og-image.jpg" },
-    { "source": "/", "destination": "/index.html" },
     {
-      "source": "/((?!assets/).*)",
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]

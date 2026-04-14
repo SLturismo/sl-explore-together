@@ -111,8 +111,6 @@ html.admin-route {
   overflow: hidden;
   overscroll-behavior: none;
   scroll-behavior: auto;
-  /* Evita “pulo” quando Radix aplica padding por barra de scroll */
-  scrollbar-gutter: stable;
 }
 
 html.admin-route body {

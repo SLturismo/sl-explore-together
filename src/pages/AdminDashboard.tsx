@@ -36,6 +36,21 @@ const AdminDashboard = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!loading && isAdmin) {
+      const html = document.documentElement;
+      const root = document.getElementById("root");
+      html.classList.add("admin-route");
+      document.body.classList.add("admin-route");
+      root?.classList.add("admin-route");
+      return () => {
+        html.classList.remove("admin-route");
+        document.body.classList.remove("admin-route");
+        root?.classList.remove("admin-route");
+      };
+    }
+  }, [loading, isAdmin]);
+
+  useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/admin/login"); return; }
@@ -80,10 +95,10 @@ const AdminDashboard = () => {
   const currentItem = menuItems.find((i) => i.key === activeSection);
 
   return (
-    <div className="flex min-h-dvh max-h-dvh bg-muted/40">
+    <div className="flex h-dvh w-full min-h-0 overflow-hidden bg-muted/40">
       {/* Sidebar */}
       <aside
-        className={`${sidebarCollapsed ? "w-[72px]" : "w-[240px]"} bg-card border-r border-border/80 flex flex-col transition-all duration-200 shrink-0 h-dvh overflow-y-auto shadow-[2px_0_12px_-4px_rgba(0,0,0,0.06)]`}
+        className={`${sidebarCollapsed ? "w-[72px]" : "w-[240px]"} bg-card border-r border-border/80 flex min-h-0 shrink-0 flex-col overflow-hidden transition-all duration-200 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.06)]`}
       >
         {/* Logo */}
         <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[4.25rem]">
@@ -97,7 +112,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Nav */}
-        <nav className="flex-1 py-4 px-2.5 space-y-0.5 overflow-y-auto">
+        <nav className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-4 px-2.5 space-y-0.5">
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.key;
@@ -143,7 +158,7 @@ const AdminDashboard = () => {
 
       {/* Main Content: scroll aqui (não na janela) para listas longas e Select/Dialog não puxarem o documento */}
       <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-        <div className="mx-auto max-h-full w-full max-w-6xl flex-1 space-y-6 overflow-y-auto p-5 sm:p-6 lg:p-8">
+        <div className="mx-auto max-h-full w-full max-w-6xl flex-1 space-y-6 overflow-y-auto overscroll-y-contain p-5 sm:p-6 lg:p-8">
           <header className="rounded-xl border border-border/80 bg-card px-5 py-4 shadow-sm flex items-start gap-4">
             {currentItem && (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

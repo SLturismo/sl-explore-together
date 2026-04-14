@@ -80,10 +80,10 @@ const AdminDashboard = () => {
   const currentItem = menuItems.find((i) => i.key === activeSection);
 
   return (
-    <div className="min-h-screen flex bg-muted/40">
+    <div className="flex min-h-dvh max-h-dvh bg-muted/40">
       {/* Sidebar */}
       <aside
-        className={`${sidebarCollapsed ? "w-[72px]" : "w-[240px]"} bg-card border-r border-border/80 flex flex-col transition-all duration-200 shrink-0 sticky top-0 h-screen shadow-[2px_0_12px_-4px_rgba(0,0,0,0.06)]`}
+        className={`${sidebarCollapsed ? "w-[72px]" : "w-[240px]"} bg-card border-r border-border/80 flex flex-col transition-all duration-200 shrink-0 h-dvh overflow-y-auto shadow-[2px_0_12px_-4px_rgba(0,0,0,0.06)]`}
       >
         {/* Logo */}
         <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[4.25rem]">
@@ -141,9 +141,9 @@ const AdminDashboard = () => {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 min-w-0 flex flex-col">
-        <div className="flex-1 p-5 sm:p-6 lg:p-8 max-w-6xl w-full mx-auto space-y-6">
+      {/* Main Content: scroll aqui (não na janela) para listas longas e Select/Dialog não puxarem o documento */}
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="mx-auto max-h-full w-full max-w-6xl flex-1 space-y-6 overflow-y-auto p-5 sm:p-6 lg:p-8">
           <header className="rounded-xl border border-border/80 bg-card px-5 py-4 shadow-sm flex items-start gap-4">
             {currentItem && (
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">

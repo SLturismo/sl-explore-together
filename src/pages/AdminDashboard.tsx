@@ -101,8 +101,8 @@ const AdminDashboard = () => {
         className={`${sidebarCollapsed ? "w-[72px]" : "w-[240px]"} bg-card border-r border-border/80 flex min-h-0 shrink-0 flex-col overflow-hidden transition-all duration-200 shadow-[2px_0_12px_-4px_rgba(0,0,0,0.06)]`}
       >
         {/* Logo */}
-        <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[5rem]">
-          <img src={logoSrc} alt="SL Turismo" className="h-14 w-14 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" />
+        <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[4.25rem]">
+          <img src={logoSrc} alt="SL Turismo" className="h-10 w-10 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" />
           {!sidebarCollapsed && (
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-foreground tracking-tight truncate">SL Turismo</span>

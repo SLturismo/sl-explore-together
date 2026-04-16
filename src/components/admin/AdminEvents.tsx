@@ -40,25 +40,12 @@ const AdminEvents = () => {
   const [createPreviewUrl, setCreatePreviewUrl] = useState<string | null>(null);
   const [createNatural, setCreateNatural] = useState<{ nw: number; nh: number } | null>(null);
   const [createCrop, setCreateCrop] = useState<CropRectPct | null>(null);
-  const [galleryImageFit, setGalleryImageFit] = useState<"cover" | "contain">("cover");
   const [editModal, setEditModal] = useState<Event | null>(null);
   const [editForm, setEditForm] = useState(emptyForm);
   const [replaceDraft, setReplaceDraft] = useState<{ file: File; previewUrl: string } | null>(null);
   const [replaceCrop, setReplaceCrop] = useState<CropRectPct | null>(null);
   const [replaceNatural, setReplaceNatural] = useState<{ nw: number; nh: number } | null>(null);
   const { toast } = useToast();
-
-  const loadGalleryImageFit = useCallback(async () => {
-    const { data } = await supabase.from("site_content").select("content").eq("section_key", "gallery").maybeSingle();
-    if (data?.content) {
-      const c = data.content as Record<string, string>;
-      if (c.image_fit === "contain" || c.image_fit === "cover") {
-        setGalleryImageFit(c.image_fit);
-        return;
-      }
-    }
-    setGalleryImageFit("cover");
-  }, []);
 
   const handleCreateNaturalChange = useCallback((n: { nw: number; nh: number } | null) => {
     setCreateNatural(n);
@@ -72,10 +59,6 @@ const AdminEvents = () => {
     const { data } = await supabase.from("events").select("*").order("created_at", { ascending: false });
     setEvents(data || []);
   };
-
-  useEffect(() => {
-    void loadGalleryImageFit();
-  }, [loadGalleryImageFit, editModal, showCreate]);
 
   useEffect(() => {
     fetchEvents();
@@ -101,14 +84,14 @@ const AdminEvents = () => {
   }, [createImageFile]);
 
   useEffect(() => {
-    if (!createNatural || galleryImageFit !== "cover" || !createPreviewUrl) return;
+    if (!createNatural || !createPreviewUrl) return;
     setCreateCrop((c) => c ?? defaultCropRectPct(createNatural.nw, createNatural.nh));
-  }, [createNatural, galleryImageFit, createPreviewUrl]);
+  }, [createNatural, createPreviewUrl]);
 
   useEffect(() => {
-    if (!replaceDraft || !replaceNatural || galleryImageFit !== "cover") return;
+    if (!replaceDraft || !replaceNatural) return;
     setReplaceCrop((c) => c ?? defaultCropRectPct(replaceNatural.nw, replaceNatural.nh));
-  }, [replaceDraft, replaceNatural, galleryImageFit]);
+  }, [replaceDraft, replaceNatural]);
 
   const closeEditModal = () => {
     setReplaceDraft((d) => {
@@ -129,31 +112,10 @@ const AdminEvents = () => {
     setReplaceNatural(null);
   };
 
-  const uploadEventImageImmediate = async (id: string, file: File) => {
-    const fileName = `${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from("events").upload(fileName, file);
-    if (uploadError) {
-      toast({ title: "Erro no upload", variant: "destructive" });
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("events").getPublicUrl(fileName);
-    await supabase
-      .from("events")
-      .update({ image_url: urlData.publicUrl, crop_x: null, crop_y: null, crop_w: null, crop_h: null })
-      .eq("id", id);
-    setEvents((p) =>
-      p.map((e) =>
-        e.id === id ? { ...e, image_url: urlData.publicUrl, crop_x: null, crop_y: null, crop_w: null, crop_h: null } : e,
-      ),
-    );
-    if (editModal?.id === id) setEditModal((p) => (p ? { ...p, image_url: urlData.publicUrl, crop_x: null, crop_y: null, crop_w: null, crop_h: null } : null));
-    toast({ title: "Imagem atualizada!" });
-  };
-
   const commitReplaceEventImage = async () => {
     if (!editModal || !replaceDraft) return;
     const hasCrop =
-      galleryImageFit === "cover" && replaceCrop != null && replaceNatural != null
+      replaceCrop != null && replaceNatural != null
         ? clampCropPan(replaceNatural.nw, replaceNatural.nh, replaceCrop)
         : null;
     const usingCrop = hasCrop != null;
@@ -227,7 +189,7 @@ const AdminEvents = () => {
       }
       const { data: urlData } = supabase.storage.from("events").getPublicUrl(fileName);
       const hasCrop =
-        galleryImageFit === "cover" && createCrop != null && createNatural != null
+        createCrop != null && createNatural != null
           ? clampCropPan(createNatural.nw, createNatural.nh, createCrop)
           : null;
       const usingCrop = hasCrop != null;
@@ -463,7 +425,7 @@ const AdminEvents = () => {
                 onChange={(e) => setCreateImageFile(e.target.files?.[0] ?? null)}
               />
             </label>
-            {galleryImageFit === "cover" && createPreviewUrl && createCrop ? (
+            {createPreviewUrl && createCrop ? (
               <AdminThumbCropEditor
                 imageSrc={createPreviewUrl}
                 crop={createCrop}
@@ -523,7 +485,7 @@ const AdminEvents = () => {
                 <Label>Descrição</Label>
                 <Textarea value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} rows={3} />
               </div>
-              {replaceDraft && galleryImageFit === "cover" && replaceCrop ? (
+              {replaceDraft && replaceCrop ? (
                 <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-3">
                   <p className="text-xs font-medium text-foreground">Nova imagem — ajuste o recorte antes de enviar</p>
                   <AdminThumbCropEditor
@@ -543,7 +505,7 @@ const AdminEvents = () => {
                   </div>
                 </div>
               ) : null}
-              {replaceDraft && galleryImageFit === "cover" && !replaceCrop ? (
+              {replaceDraft && !replaceCrop ? (
                 <p className="text-xs text-muted-foreground">A carregar pré-visualização…</p>
               ) : null}
               {!replaceDraft ? (
@@ -560,10 +522,6 @@ const AdminEvents = () => {
                           const f = e.target.files?.[0];
                           e.target.value = "";
                           if (!f || !editModal) return;
-                          if (galleryImageFit !== "cover") {
-                            void uploadEventImageImmediate(editModal.id, f);
-                            return;
-                          }
                           setReplaceDraft((d) => {
                             if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
                             return { file: f, previewUrl: URL.createObjectURL(f) };
@@ -575,10 +533,10 @@ const AdminEvents = () => {
                     </label>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    Com a galeria do site em «Preencher o quadro», pode ajustar o recorte da miniatura antes de confirmar o envio.
+                    Escolha um ficheiro e ajuste o recorte da miniatura antes de confirmar com «Enviar nova imagem».
                   </TooltipContent>
                 </Tooltip>
-              ) : galleryImageFit === "contain" ? null : (
+              ) : (
                 <p className="text-xs text-muted-foreground">Cancele ou envie a substituição em curso para escolher outro ficheiro.</p>
               )}
               <div className="flex gap-2 justify-end">

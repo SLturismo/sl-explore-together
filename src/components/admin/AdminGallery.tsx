@@ -175,14 +175,14 @@ const AdminGallery = () => {
   }, [createFile]);
 
   useEffect(() => {
-    if (!createNatural || galleryImageFit !== "cover" || !createPreviewUrl) return;
+    if (!createNatural || !createPreviewUrl) return;
     setCreateCrop((c) => c ?? defaultCropRectPct(createNatural.nw, createNatural.nh));
-  }, [createNatural, galleryImageFit, createPreviewUrl]);
+  }, [createNatural, createPreviewUrl]);
 
   useEffect(() => {
-    if (!replaceDraft || !replaceNatural || galleryImageFit !== "cover") return;
+    if (!replaceDraft || !replaceNatural) return;
     setReplaceCrop((c) => c ?? defaultCropRectPct(replaceNatural.nw, replaceNatural.nh));
-  }, [replaceDraft, replaceNatural, galleryImageFit]);
+  }, [replaceDraft, replaceNatural]);
 
   /** No modo foco o editor de recorte não monta; carregamos na mesma as dimensões para «Definir recorte 4:3». */
   useEffect(() => {
@@ -275,7 +275,7 @@ const AdminGallery = () => {
     const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(fileName);
     const nextOrder = images.length;
     const hasCrop =
-      galleryImageFit === "cover" && createCrop != null && createNatural != null
+      createCrop != null && createNatural != null
         ? clampCropPan(createNatural.nw, createNatural.nh, createCrop)
         : null;
     const usingCrop = hasCrop != null;
@@ -422,37 +422,6 @@ const AdminGallery = () => {
     }
   };
 
-  /** Modo «Mostrar imagem inteira»: substitui ficheiro sem passo de recorte. */
-  const replaceImageImmediate = async (id: string, file: File) => {
-    const fileName = `${Date.now()}-${file.name}`;
-    const { error: uploadError } = await supabase.storage.from("gallery").upload(fileName, file);
-    if (uploadError) {
-      toast({ title: "Erro no upload", variant: "destructive" });
-      return;
-    }
-    const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(fileName);
-    const { error } = await supabase
-      .from("gallery_images")
-      .update({
-        url: urlData.publicUrl,
-        crop_x: null,
-        crop_y: null,
-        crop_w: null,
-        crop_h: null,
-      })
-      .eq("id", id);
-    if (!error) {
-      setImages((prev) =>
-        prev.map((i) => (i.id === id ? { ...i, url: urlData.publicUrl, crop: null } : i)),
-      );
-      if (editModal?.id === id) {
-        setEditCrop(null);
-        setEditModal((prev) => (prev ? { ...prev, url: urlData.publicUrl, crop: null } : null));
-      }
-      toast({ title: "Imagem substituída!" });
-    }
-  };
-
   const cancelReplaceDraft = () => {
     setReplaceDraft((d) => {
       if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
@@ -475,7 +444,7 @@ const AdminGallery = () => {
   const commitReplaceImage = async () => {
     if (!editModal || !replaceDraft) return;
     const hasCrop =
-      galleryImageFit === "cover" && replaceCrop != null && replaceNatural != null
+      replaceCrop != null && replaceNatural != null
         ? clampCropPan(replaceNatural.nw, replaceNatural.nh, replaceCrop)
         : null;
     const usingCrop = hasCrop != null;
@@ -793,7 +762,7 @@ NOTIFY pgrst, 'reload schema';`}
                 onChange={(e) => setCreateFile(e.target.files?.[0] ?? null)}
               />
             </label>
-            {galleryImageFit === "cover" && createPreviewUrl && createCrop ? (
+            {createPreviewUrl && createCrop ? (
               <AdminThumbCropEditor
                 imageSrc={createPreviewUrl}
                 crop={createCrop}
@@ -928,7 +897,7 @@ NOTIFY pgrst, 'reload schema';`}
                 <Label>Descrição</Label>
                 <Textarea value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} rows={3} />
               </div>
-              {replaceDraft && galleryImageFit === "cover" && replaceCrop ? (
+              {replaceDraft && replaceCrop ? (
                 <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-3">
                   <p className="text-xs font-medium text-foreground">Nova imagem — ajuste o recorte antes de enviar</p>
                   <AdminThumbCropEditor
@@ -948,7 +917,7 @@ NOTIFY pgrst, 'reload schema';`}
                   </div>
                 </div>
               ) : null}
-              {replaceDraft && galleryImageFit === "cover" && !replaceCrop ? (
+              {replaceDraft && !replaceCrop ? (
                 <p className="text-xs text-muted-foreground">A carregar pré-visualização…</p>
               ) : null}
               {!replaceDraft ? (
@@ -965,10 +934,6 @@ NOTIFY pgrst, 'reload schema';`}
                           const f = e.target.files?.[0];
                           e.target.value = "";
                           if (!f || !editModal) return;
-                          if (galleryImageFit !== "cover") {
-                            void replaceImageImmediate(editModal.id, f);
-                            return;
-                          }
                           setReplaceDraft((d) => {
                             if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
                             return { file: f, previewUrl: URL.createObjectURL(f) };
@@ -980,11 +945,10 @@ NOTIFY pgrst, 'reload schema';`}
                     </label>
                   </TooltipTrigger>
                   <TooltipContent className="max-w-xs">
-                    Escolhe um novo ficheiro. Com a galeria em «Preencher o quadro», pode ajustar o recorte da miniatura antes de
-                    confirmar o envio.
+                    Escolhe um novo ficheiro e ajuste o recorte da miniatura antes de confirmar com «Enviar nova imagem».
                   </TooltipContent>
                 </Tooltip>
-              ) : galleryImageFit === "contain" ? null : (
+              ) : (
                 <p className="text-xs text-muted-foreground">Cancele ou envie a substituição em curso para escolher outro ficheiro.</p>
               )}
               <div className="flex gap-2 justify-end">

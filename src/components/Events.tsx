@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useSectionVisible } from "@/contexts/PublicSiteContext";
 import galleryResort from "@/assets/gallery-resort.jpg";
+import { GalleryCoverThumb } from "@/components/GalleryCoverThumb";
+import { parseCropFromRow } from "@/lib/gallery-crop";
 
 type EventRow = {
   id: string;
@@ -15,6 +17,10 @@ type EventRow = {
   image_url: string | null;
   spots: number | null;
   active: boolean | null;
+  crop_x?: number | null;
+  crop_y?: number | null;
+  crop_w?: number | null;
+  crop_h?: number | null;
 };
 
 const Events = () => {
@@ -72,16 +78,21 @@ const Events = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {events.map((event) => (
-              <Card key={event.id} className="overflow-hidden hover:shadow-xl transition-shadow border-border">
+            {events.map((event) => {
+              const src = event.image_url || galleryResort;
+              const thumbCrop = event.image_url ? parseCropFromRow(event) : null;
+              return (
+              <Card key={event.id} className="group overflow-hidden hover:shadow-xl transition-shadow border-border">
                 <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={event.image_url || galleryResort}
+                  <GalleryCoverThumb
+                    src={src}
                     alt={event.title}
-                    loading="lazy"
+                    crop={thumbCrop}
+                    className="h-48 w-full transition-transform duration-500 group-hover:scale-105"
+                    objectCoverClass="object-cover"
+                    imageFit="cover"
                     width={800}
                     height={600}
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                   />
                   {event.spots != null && event.spots > 0 && (
                     <div className="absolute top-3 right-3 bg-primary text-primary-foreground text-xs px-3 py-1 rounded-full font-medium">
@@ -112,7 +123,8 @@ const Events = () => {
                   </a>
                 </CardContent>
               </Card>
-            ))}
+            );
+            })}
           </div>
         )}
       </div>

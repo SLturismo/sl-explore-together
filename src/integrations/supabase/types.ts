@@ -18,6 +18,10 @@ export type Database = {
         Row: {
           active: boolean | null
           created_at: string
+          crop_h: number | null
+          crop_w: number | null
+          crop_x: number | null
+          crop_y: number | null
           description: string | null
           event_date: string | null
           id: string
@@ -29,6 +33,10 @@ export type Database = {
         Insert: {
           active?: boolean | null
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           description?: string | null
           event_date?: string | null
           id?: string
@@ -40,6 +48,10 @@ export type Database = {
         Update: {
           active?: boolean | null
           created_at?: string
+          crop_h?: number | null
+          crop_w?: number | null
+          crop_x?: number | null
+          crop_y?: number | null
           description?: string | null
           event_date?: string | null
           id?: string

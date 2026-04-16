@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,11 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Trash2, Plus, Pencil, ArrowUp, ArrowDown, Upload, ImageIcon, AlertCircle } from "lucide-react";
+import { Trash2, Plus, Pencil, ArrowUp, ArrowDown, Upload, ImageIcon, AlertCircle, CircleHelp } from "lucide-react";
 import type { CropRectPct } from "@/lib/gallery-crop";
-import {
-  clampCropPan,
-  defaultCropRectPct,
-  moveCropByDisplayDelta,
-  objectContainMetrics,
-  parseCropFromRow,
-  zoomCropAroundCenter,
-} from "@/lib/gallery-crop";
+import { clampCropPan, defaultCropRectPct, parseCropFromRow } from "@/lib/gallery-crop";
+import { AdminThumbCropEditor } from "@/components/admin/AdminThumbCropEditor";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
 type GalleryImage = {
   id: string;
@@ -99,6 +94,12 @@ const AdminGallery = () => {
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [createFile, setCreateFile] = useState<File | null>(null);
+  const [createPreviewUrl, setCreatePreviewUrl] = useState<string | null>(null);
+  const [createNatural, setCreateNatural] = useState<{ nw: number; nh: number } | null>(null);
+  const [createCrop, setCreateCrop] = useState<CropRectPct | null>(null);
+  const [replaceDraft, setReplaceDraft] = useState<{ file: File; previewUrl: string } | null>(null);
+  const [replaceCrop, setReplaceCrop] = useState<CropRectPct | null>(null);
+  const [replaceNatural, setReplaceNatural] = useState<{ nw: number; nh: number } | null>(null);
   const [editModal, setEditModal] = useState<GalleryImage | null>(null);
   const [editForm, setEditForm] = useState({
     category: "",
@@ -112,13 +113,21 @@ const AdminGallery = () => {
   const focalAreaRef = useRef<HTMLDivElement>(null);
   const [focalDragging, setFocalDragging] = useState(false);
   const [focalAreaHover, setFocalAreaHover] = useState(false);
-  const [cropDragging, setCropDragging] = useState(false);
   const [editNatural, setEditNatural] = useState<{ nw: number; nh: number } | null>(null);
   const [editCrop, setEditCrop] = useState<CropRectPct | null>(null);
-  const cropEditorRef = useRef<HTMLDivElement>(null);
-  const cropDragRef = useRef<{ lastX: number; lastY: number } | null>(null);
-  const [cropEditorBox, setCropEditorBox] = useState({ w: 0, h: 0 });
   const { toast } = useToast();
+
+  const handleEditNaturalChange = useCallback((n: { nw: number; nh: number } | null) => {
+    setEditNatural(n);
+  }, []);
+
+  const handleCreateNaturalChange = useCallback((n: { nw: number; nh: number } | null) => {
+    setCreateNatural(n);
+  }, []);
+
+  const handleReplaceNaturalChange = useCallback((n: { nw: number; nh: number } | null) => {
+    setReplaceNatural(n);
+  }, []);
 
   const loadGalleryImageFit = useCallback(async () => {
     const { data } = await supabase.from("site_content").select("content").eq("section_key", "gallery").maybeSingle();
@@ -143,15 +152,41 @@ const AdminGallery = () => {
   useEffect(() => {
     if (!editModal) {
       setFocalDragging(false);
-      setCropDragging(false);
     }
   }, [editModal]);
 
   useEffect(() => {
-    if (!editModal) {
-      setEditNatural(null);
+    if (!createFile) {
+      setCreatePreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setCreateNatural(null);
+      setCreateCrop(null);
       return;
     }
+    setCreateNatural(null);
+    setCreateCrop(null);
+    const url = URL.createObjectURL(createFile);
+    setCreatePreviewUrl(url);
+    return () => {
+      URL.revokeObjectURL(url);
+    };
+  }, [createFile]);
+
+  useEffect(() => {
+    if (!createNatural || galleryImageFit !== "cover" || !createPreviewUrl) return;
+    setCreateCrop((c) => c ?? defaultCropRectPct(createNatural.nw, createNatural.nh));
+  }, [createNatural, galleryImageFit, createPreviewUrl]);
+
+  useEffect(() => {
+    if (!replaceDraft || !replaceNatural || galleryImageFit !== "cover") return;
+    setReplaceCrop((c) => c ?? defaultCropRectPct(replaceNatural.nw, replaceNatural.nh));
+  }, [replaceDraft, replaceNatural, galleryImageFit]);
+
+  /** No modo foco o editor de recorte não monta; carregamos na mesma as dimensões para «Definir recorte 4:3». */
+  useEffect(() => {
+    if (!editModal || galleryImageFit !== "cover" || editCrop) return;
     const url = editModal.url;
     const im = new Image();
     im.crossOrigin = "anonymous";
@@ -165,7 +200,7 @@ const AdminGallery = () => {
       im.onload = null;
       im.onerror = null;
     };
-  }, [editModal?.id, editModal?.url]);
+  }, [editModal?.id, editModal?.url, galleryImageFit, editCrop]);
 
   const fetchImages = async () => {
     console.log(`${LOG} fetchImages:start`);
@@ -239,6 +274,11 @@ const AdminGallery = () => {
     }
     const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(fileName);
     const nextOrder = images.length;
+    const hasCrop =
+      galleryImageFit === "cover" && createCrop != null && createNatural != null
+        ? clampCropPan(createNatural.nw, createNatural.nh, createCrop)
+        : null;
+    const usingCrop = hasCrop != null;
     const { error } = await supabase.from("gallery_images").insert({
       url: urlData.publicUrl,
       category: form.category,
@@ -246,6 +286,10 @@ const AdminGallery = () => {
       description: form.description || null,
       display_order: nextOrder,
       is_visible: true,
+      crop_x: usingCrop ? hasCrop.x : null,
+      crop_y: usingCrop ? hasCrop.y : null,
+      crop_w: usingCrop ? hasCrop.w : null,
+      crop_h: usingCrop ? hasCrop.h : null,
     });
     if (error) {
       toast({ title: "Erro ao salvar imagem", variant: "destructive" });
@@ -268,6 +312,12 @@ const AdminGallery = () => {
   };
 
   const openEdit = (img: GalleryImage) => {
+    setReplaceDraft((d) => {
+      if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
+      return null;
+    });
+    setReplaceCrop(null);
+    setReplaceNatural(null);
     setEditModal(img);
     setEditCrop(img.crop);
     setEditForm({
@@ -307,54 +357,16 @@ const AdminGallery = () => {
     };
   }, [focalDragging, setFocalFromClient]);
 
-  useEffect(() => {
-    if (!cropDragging || !editCrop || !editNatural) return;
-    const onMove = (e: PointerEvent) => {
-      const el = cropEditorRef.current;
-      if (!el || !cropDragRef.current) return;
-      const rect = el.getBoundingClientRect();
-      const m = objectContainMetrics(rect.width, rect.height, editNatural.nw, editNatural.nh);
-      const dx = e.clientX - cropDragRef.current.lastX;
-      const dy = e.clientY - cropDragRef.current.lastY;
-      cropDragRef.current = { lastX: e.clientX, lastY: e.clientY };
-      setEditCrop((c) => (c ? moveCropByDisplayDelta(editNatural.nw, editNatural.nh, c, dx, dy, m.scale) : c));
-    };
-    const onEnd = () => {
-      cropDragRef.current = null;
-      setCropDragging(false);
-    };
-    window.addEventListener("pointermove", onMove);
-    window.addEventListener("pointerup", onEnd);
-    window.addEventListener("pointercancel", onEnd);
-    return () => {
-      window.removeEventListener("pointermove", onMove);
-      window.removeEventListener("pointerup", onEnd);
-      window.removeEventListener("pointercancel", onEnd);
-    };
-  }, [cropDragging, editCrop, editNatural]);
-
-  useLayoutEffect(() => {
-    if (!editModal || galleryImageFit !== "cover") {
-      setCropEditorBox({ w: 0, h: 0 });
-      return;
-    }
-    const el = cropEditorRef.current;
-    if (!el) {
-      setCropEditorBox({ w: 0, h: 0 });
-      return;
-    }
-    const ro = new ResizeObserver(() => {
-      const r = el.getBoundingClientRect();
-      setCropEditorBox({ w: Math.max(1, r.width), h: Math.max(1, r.height) });
-    });
-    ro.observe(el);
-    const r = el.getBoundingClientRect();
-    setCropEditorBox({ w: Math.max(1, r.width), h: Math.max(1, r.height) });
-    return () => ro.disconnect();
-  }, [editModal?.id, galleryImageFit, editCrop]);
-
   const saveEdit = async () => {
     if (!editModal) return;
+    if (replaceDraft) {
+      toast({
+        title: "Substituição pendente",
+        description: "Envie ou cancele a nova imagem antes de salvar os outros dados.",
+        variant: "destructive",
+      });
+      return;
+    }
     const hasCrop =
       editCrop != null && editNatural != null
         ? clampCropPan(editNatural.nw, editNatural.nh, editCrop)
@@ -410,7 +422,8 @@ const AdminGallery = () => {
     }
   };
 
-  const replaceImage = async (id: string, file: File) => {
+  /** Modo «Mostrar imagem inteira»: substitui ficheiro sem passo de recorte. */
+  const replaceImageImmediate = async (id: string, file: File) => {
     const fileName = `${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from("gallery").upload(fileName, file);
     if (uploadError) {
@@ -438,6 +451,67 @@ const AdminGallery = () => {
       }
       toast({ title: "Imagem substituída!" });
     }
+  };
+
+  const cancelReplaceDraft = () => {
+    setReplaceDraft((d) => {
+      if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
+      return null;
+    });
+    setReplaceCrop(null);
+    setReplaceNatural(null);
+  };
+
+  const closeEditModal = () => {
+    setReplaceDraft((d) => {
+      if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
+      return null;
+    });
+    setReplaceCrop(null);
+    setReplaceNatural(null);
+    setEditModal(null);
+  };
+
+  const commitReplaceImage = async () => {
+    if (!editModal || !replaceDraft) return;
+    const hasCrop =
+      galleryImageFit === "cover" && replaceCrop != null && replaceNatural != null
+        ? clampCropPan(replaceNatural.nw, replaceNatural.nh, replaceCrop)
+        : null;
+    const usingCrop = hasCrop != null;
+    const fileName = `${Date.now()}-${replaceDraft.file.name}`;
+    const { error: uploadError } = await supabase.storage.from("gallery").upload(fileName, replaceDraft.file);
+    if (uploadError) {
+      toast({ title: "Erro no upload", variant: "destructive" });
+      return;
+    }
+    const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(fileName);
+    const { error } = await supabase
+      .from("gallery_images")
+      .update({
+        url: urlData.publicUrl,
+        crop_x: usingCrop ? hasCrop.x : null,
+        crop_y: usingCrop ? hasCrop.y : null,
+        crop_w: usingCrop ? hasCrop.w : null,
+        crop_h: usingCrop ? hasCrop.h : null,
+      })
+      .eq("id", editModal.id);
+    if (error) {
+      toast({ title: "Erro ao substituir imagem", variant: "destructive" });
+      return;
+    }
+    if (replaceDraft.previewUrl) URL.revokeObjectURL(replaceDraft.previewUrl);
+    setReplaceDraft(null);
+    setReplaceCrop(null);
+    setReplaceNatural(null);
+    setEditCrop(usingCrop ? hasCrop : null);
+    setEditModal((prev) => (prev ? { ...prev, url: urlData.publicUrl, crop: usingCrop ? hasCrop : null } : null));
+    setImages((prev) =>
+      prev.map((i) =>
+        i.id === editModal.id ? { ...i, url: urlData.publicUrl, crop: usingCrop ? hasCrop : null } : i,
+      ),
+    );
+    toast({ title: "Imagem substituída!" });
   };
 
   const toggleVisible = async (img: GalleryImage, next: boolean) => {
@@ -600,7 +674,7 @@ NOTIFY pgrst, 'reload schema';`}
                   )}
                 </div>
                 {img.description && <p className="text-xs text-muted-foreground line-clamp-2">{img.description}</p>}
-                <div className="flex items-center gap-2 mt-3">
+                <div className="flex items-center gap-1.5 mt-3">
                   <Switch
                     id={`vis-${img.id}`}
                     checked={img.is_visible !== false}
@@ -610,21 +684,49 @@ NOTIFY pgrst, 'reload schema';`}
                   <Label htmlFor={`vis-${img.id}`} className="text-xs font-normal cursor-pointer">
                     Visível no site
                   </Label>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Ajuda sobre visibilidade"
+                      >
+                        <CircleHelp className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      Quando desligado, a foto deixa de aparecer na galeria pública do site. Continua listada aqui no painel.
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-1 shrink-0 justify-end">
-                <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveImage(index, -1)} disabled={index === 0}>
-                  <ArrowUp className="h-3.5 w-3.5" />
-                </Button>
-                <Button
-                  size="icon"
-                  variant="ghost"
-                  className="h-8 w-8"
-                  onClick={() => moveImage(index, 1)}
-                  disabled={index === images.length - 1}
-                >
-                  <ArrowDown className="h-3.5 w-3.5" />
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => moveImage(index, -1)} disabled={index === 0}>
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Mover para cima na galeria pública (mostrar antes).</TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => moveImage(index, 1)}
+                        disabled={index === images.length - 1}
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>Mover para baixo na galeria pública (mostrar depois).</TooltipContent>
+                </Tooltip>
                 <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(img)}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
@@ -691,6 +793,15 @@ NOTIFY pgrst, 'reload schema';`}
                 onChange={(e) => setCreateFile(e.target.files?.[0] ?? null)}
               />
             </label>
+            {galleryImageFit === "cover" && createPreviewUrl && createCrop ? (
+              <AdminThumbCropEditor
+                imageSrc={createPreviewUrl}
+                crop={createCrop}
+                onCropChange={setCreateCrop}
+                onNaturalChange={handleCreateNaturalChange}
+                showHelpTrigger
+              />
+            ) : null}
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={() => setShowCreate(false)}>
                 Cancelar
@@ -704,7 +815,7 @@ NOTIFY pgrst, 'reload schema';`}
       </Dialog>
 
       {/* Edit Modal */}
-      <Dialog open={!!editModal} onOpenChange={(open) => !open && setEditModal(null)}>
+      <Dialog open={!!editModal} onOpenChange={(open) => !open && closeEditModal()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="font-display">Editar imagem</DialogTitle>
@@ -717,100 +828,14 @@ NOTIFY pgrst, 'reload schema';`}
                   Galeria). O ponto de foco só é usado com <strong className="text-foreground">«Preencher o quadro»</strong>.
                 </div>
               ) : editCrop ? (
-                <div className="space-y-2">
-                  <Label>Recorte na miniatura (4:3)</Label>
-                  <div
-                    ref={cropEditorRef}
-                    role="presentation"
-                    className="relative w-full touch-none overflow-hidden rounded-lg border border-border/80 bg-muted/30 select-none min-h-[200px]"
-                    onWheel={(e) => {
-                      if (!editNatural || !editCrop) return;
-                      e.preventDefault();
-                      const dir = e.deltaY > 0 ? 1.06 : 0.94;
-                      setEditCrop(zoomCropAroundCenter(editNatural.nw, editNatural.nh, editCrop, dir));
-                    }}
-                  >
-                    <img
-                      src={editModal.url}
-                      alt=""
-                      className="pointer-events-none block max-h-[240px] w-full object-contain mx-auto"
-                      draggable={false}
-                    />
-                    {editNatural &&
-                      (() => {
-                        const { ox, oy, scale } = objectContainMetrics(
-                          cropEditorBox.w,
-                          cropEditorBox.h,
-                          editNatural.nw,
-                          editNatural.nh,
-                        );
-                        const box = cropEditorBox;
-                        if (!box.w || !box.h) return null;
-                        return (
-                          <div
-                            role="presentation"
-                            className="absolute z-[2] cursor-move rounded-sm border-2 border-primary bg-primary/10 shadow-[0_0_0_1px_rgba(0,0,0,0.35)] touch-none"
-                            style={{
-                              left: ox + (editCrop.x / 100) * editNatural.nw * scale,
-                              top: oy + (editCrop.y / 100) * editNatural.nh * scale,
-                              width: (editCrop.w / 100) * editNatural.nw * scale,
-                              height: (editCrop.h / 100) * editNatural.nh * scale,
-                            }}
-                            onPointerDown={(e) => {
-                              if (e.button !== 0) return;
-                              e.preventDefault();
-                              cropDragRef.current = { lastX: e.clientX, lastY: e.clientY };
-                              setCropDragging(true);
-                            }}
-                          />
-                        );
-                      })()}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">
-                    Arraste o retângulo. Use a roda do rato sobre a imagem para aproximar ou afastar. Isto só altera a
-                    miniatura na galeria; ao clicar para ver em grande, a foto continua inteira.
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!editNatural || !editCrop}
-                      onClick={() =>
-                        editNatural &&
-                        editCrop &&
-                        setEditCrop(zoomCropAroundCenter(editNatural.nw, editNatural.nh, editCrop, 0.92))
-                      }
-                    >
-                      Mais zoom
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!editNatural || !editCrop}
-                      onClick={() =>
-                        editNatural &&
-                        editCrop &&
-                        setEditCrop(zoomCropAroundCenter(editNatural.nw, editNatural.nh, editCrop, 1.08))
-                      }
-                    >
-                      Menos zoom
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      disabled={!editNatural}
-                      onClick={() => editNatural && setEditCrop(defaultCropRectPct(editNatural.nw, editNatural.nh))}
-                    >
-                      Repor máximo
-                    </Button>
-                    <Button type="button" variant="outline" size="sm" onClick={() => setEditCrop(null)}>
-                      Limpar recorte
-                    </Button>
-                  </div>
-                </div>
+                <AdminThumbCropEditor
+                  imageSrc={editModal.url}
+                  crop={editCrop}
+                  onCropChange={setEditCrop}
+                  onNaturalChange={handleEditNaturalChange}
+                  showHelpTrigger
+                  allowClearToFocal
+                />
               ) : (
                 <div className="space-y-1.5">
                   <Label>Ponto de foco no corte</Label>
@@ -903,18 +928,67 @@ NOTIFY pgrst, 'reload schema';`}
                 <Label>Descrição</Label>
                 <Textarea value={editForm.description} onChange={(e) => setEditForm((p) => ({ ...p, description: e.target.value }))} rows={3} />
               </div>
-              <label className="flex items-center gap-2 text-sm text-primary cursor-pointer underline font-medium">
-                <Upload className="h-4 w-4" />
-                Substituir imagem
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => e.target.files?.[0] && replaceImage(editModal.id, e.target.files[0])}
-                />
-              </label>
+              {replaceDraft && galleryImageFit === "cover" && replaceCrop ? (
+                <div className="space-y-3 rounded-lg border border-border/80 bg-muted/20 p-3">
+                  <p className="text-xs font-medium text-foreground">Nova imagem — ajuste o recorte antes de enviar</p>
+                  <AdminThumbCropEditor
+                    imageSrc={replaceDraft.previewUrl}
+                    crop={replaceCrop}
+                    onCropChange={setReplaceCrop}
+                    onNaturalChange={handleReplaceNaturalChange}
+                    showHelpTrigger
+                  />
+                  <div className="flex flex-wrap gap-2 justify-end">
+                    <Button type="button" variant="outline" size="sm" onClick={cancelReplaceDraft}>
+                      Cancelar substituição
+                    </Button>
+                    <Button type="button" size="sm" onClick={() => void commitReplaceImage()}>
+                      Enviar nova imagem
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+              {replaceDraft && galleryImageFit === "cover" && !replaceCrop ? (
+                <p className="text-xs text-muted-foreground">A carregar pré-visualização…</p>
+              ) : null}
+              {!replaceDraft ? (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <label className="flex items-center gap-2 text-sm text-primary cursor-pointer underline font-medium w-fit">
+                      <Upload className="h-4 w-4 shrink-0" />
+                      Substituir imagem
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!f || !editModal) return;
+                          if (galleryImageFit !== "cover") {
+                            void replaceImageImmediate(editModal.id, f);
+                            return;
+                          }
+                          setReplaceDraft((d) => {
+                            if (d?.previewUrl) URL.revokeObjectURL(d.previewUrl);
+                            return { file: f, previewUrl: URL.createObjectURL(f) };
+                          });
+                          setReplaceCrop(null);
+                          setReplaceNatural(null);
+                        }}
+                      />
+                    </label>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-xs">
+                    Escolhe um novo ficheiro. Com a galeria em «Preencher o quadro», pode ajustar o recorte da miniatura antes de
+                    confirmar o envio.
+                  </TooltipContent>
+                </Tooltip>
+              ) : galleryImageFit === "contain" ? null : (
+                <p className="text-xs text-muted-foreground">Cancele ou envie a substituição em curso para escolher outro ficheiro.</p>
+              )}
               <div className="flex gap-2 justify-end">
-                <Button variant="outline" onClick={() => setEditModal(null)}>
+                <Button variant="outline" onClick={closeEditModal}>
                   Cancelar
                 </Button>
                 <Button onClick={saveEdit}>Salvar</Button>

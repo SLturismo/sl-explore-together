@@ -84,9 +84,48 @@ const AdminEvents = () => {
   }, [createImageFile]);
 
   useEffect(() => {
+    if (!createPreviewUrl) {
+      setCreateNatural(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        setCreateNatural({ nw: im.naturalWidth, nh: im.naturalHeight });
+      } else setCreateNatural(null);
+    };
+    im.onerror = () => setCreateNatural(null);
+    im.src = createPreviewUrl;
+    return () => {
+      im.onload = null;
+      im.onerror = null;
+    };
+  }, [createPreviewUrl]);
+
+  useEffect(() => {
     if (!createNatural || !createPreviewUrl) return;
     setCreateCrop((c) => c ?? defaultCropRectPct(createNatural.nw, createNatural.nh));
   }, [createNatural, createPreviewUrl]);
+
+  useEffect(() => {
+    const url = replaceDraft?.previewUrl;
+    if (!url) {
+      setReplaceNatural(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        setReplaceNatural({ nw: im.naturalWidth, nh: im.naturalHeight });
+      } else setReplaceNatural(null);
+    };
+    im.onerror = () => setReplaceNatural(null);
+    im.src = url;
+    return () => {
+      im.onload = null;
+      im.onerror = null;
+    };
+  }, [replaceDraft?.previewUrl]);
 
   useEffect(() => {
     if (!replaceDraft || !replaceNatural) return;
@@ -425,6 +464,13 @@ const AdminEvents = () => {
                 onChange={(e) => setCreateImageFile(e.target.files?.[0] ?? null)}
               />
             </label>
+            {!createPreviewUrl ? (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Se escolher imagem, poderá ajustar o recorte da miniatura antes de «Criar Evento».
+              </p>
+            ) : !createCrop ? (
+              <p className="text-[11px] text-muted-foreground">A carregar pré-visualização…</p>
+            ) : null}
             {createPreviewUrl && createCrop ? (
               <AdminThumbCropEditor
                 imageSrc={createPreviewUrl}

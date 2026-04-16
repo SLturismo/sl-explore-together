@@ -174,10 +174,50 @@ const AdminGallery = () => {
     };
   }, [createFile]);
 
+  /** Dimensões naturais a partir do blob URL (o editor de recorte só monta depois disto). */
+  useEffect(() => {
+    if (!createPreviewUrl) {
+      setCreateNatural(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        setCreateNatural({ nw: im.naturalWidth, nh: im.naturalHeight });
+      } else setCreateNatural(null);
+    };
+    im.onerror = () => setCreateNatural(null);
+    im.src = createPreviewUrl;
+    return () => {
+      im.onload = null;
+      im.onerror = null;
+    };
+  }, [createPreviewUrl]);
+
   useEffect(() => {
     if (!createNatural || !createPreviewUrl) return;
     setCreateCrop((c) => c ?? defaultCropRectPct(createNatural.nw, createNatural.nh));
   }, [createNatural, createPreviewUrl]);
+
+  useEffect(() => {
+    const url = replaceDraft?.previewUrl;
+    if (!url) {
+      setReplaceNatural(null);
+      return;
+    }
+    const im = new Image();
+    im.onload = () => {
+      if (im.naturalWidth > 0 && im.naturalHeight > 0) {
+        setReplaceNatural({ nw: im.naturalWidth, nh: im.naturalHeight });
+      } else setReplaceNatural(null);
+    };
+    im.onerror = () => setReplaceNatural(null);
+    im.src = url;
+    return () => {
+      im.onload = null;
+      im.onerror = null;
+    };
+  }, [replaceDraft?.previewUrl]);
 
   useEffect(() => {
     if (!replaceDraft || !replaceNatural) return;
@@ -762,6 +802,13 @@ NOTIFY pgrst, 'reload schema';`}
                 onChange={(e) => setCreateFile(e.target.files?.[0] ?? null)}
               />
             </label>
+            {!createPreviewUrl ? (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Escolha um ficheiro para aparecer a pré-visualização e o recorte da miniatura antes de «Adicionar».
+              </p>
+            ) : !createCrop ? (
+              <p className="text-[11px] text-muted-foreground">A carregar pré-visualização…</p>
+            ) : null}
             {createPreviewUrl && createCrop ? (
               <AdminThumbCropEditor
                 imageSrc={createPreviewUrl}

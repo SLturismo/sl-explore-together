@@ -105,7 +105,7 @@ const AdminLogin = () => {
     <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
         <div className="text-center mb-8">
-          <img src={logoSrc} alt="SL Turismo" className="h-20 w-auto mx-auto rounded-xl mb-4" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-20 w-auto mx-auto rounded-xl mb-4" /> : null}
           <h1 className="font-display text-2xl font-bold text-foreground">Painel Administrativo</h1>
           <p className="text-muted-foreground text-sm mt-1">
             {showForgot

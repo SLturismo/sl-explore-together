@@ -47,7 +47,7 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-sm border-b border-border">
       <div className="container mx-auto px-4 flex items-center justify-between h-16 md:h-20">
         <a href="#inicio" className="flex items-center gap-2 shrink-0">
-          <img src={logoSrc} alt="SL Turismo" className="h-16 md:h-20 w-auto rounded-lg" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-16 md:h-20 w-auto rounded-lg" /> : null}
         </a>
 
         <nav className="hidden md:flex items-center gap-6">

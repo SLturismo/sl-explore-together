@@ -117,7 +117,7 @@ const AdminResetPassword = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
         <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border text-center space-y-4">
-          <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl" /> : null}
           <h1 className="font-display text-xl font-bold text-foreground">Link inválido ou expirado</h1>
           <p className="text-sm text-muted-foreground">
             Peça um novo e-mail na tela de login em <strong>Esqueci minha senha</strong> e use o link mais recente. Confirme também se abriu o site correto (ex.: www.slturismo.com).
@@ -134,7 +134,7 @@ const AdminResetPassword = () => {
     <div className="min-h-screen flex items-center justify-center bg-rose-light px-4">
       <div className="w-full max-w-md bg-card rounded-2xl shadow-xl p-8 border border-border">
         <div className="text-center mb-6">
-          <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl mb-3" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto mx-auto rounded-xl mb-3" /> : null}
           <h1 className="font-display text-xl font-bold text-foreground">Nova senha</h1>
           <p className="text-muted-foreground text-sm mt-1">Defina a senha que usará no painel administrativo.</p>
         </div>

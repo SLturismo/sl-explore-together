@@ -126,7 +126,7 @@ const AdminDashboard = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted/50">
         <div className="text-center rounded-2xl border border-border/80 bg-card px-10 py-8 shadow-sm">
-          <img src={logoSrc} alt="SL Turismo" className="h-14 w-14 mx-auto mb-4 rounded-xl object-cover shadow-sm ring-1 ring-border/60" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-14 w-14 mx-auto mb-4 rounded-xl object-cover shadow-sm ring-1 ring-border/60" /> : null}
           <p className="text-sm font-medium text-foreground">A carregar painel</p>
           <p className="text-xs text-muted-foreground mt-1">Um momento…</p>
         </div>
@@ -146,7 +146,7 @@ const AdminDashboard = () => {
       >
         {/* Logo */}
         <div className="p-4 border-b border-border/80 flex items-center gap-3 min-h-[4.25rem]">
-          <img src={logoSrc} alt="SL Turismo" className="h-10 w-10 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" />
+          {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-10 w-10 rounded-lg shrink-0 object-cover ring-1 ring-border/60 shadow-sm" /> : null}
           {!sidebarCollapsed && (
             <div className="min-w-0">
               <span className="block text-sm font-semibold text-foreground tracking-tight truncate">SL Turismo</span>

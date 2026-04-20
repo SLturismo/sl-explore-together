@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
 import { syncBrandingMetaTags, toAbsoluteAssetUrl } from "@/lib/branding-meta";
 import { readCachedLogoUrl, writeCachedLogoUrl } from "@/lib/logo-url-cache";
 
@@ -28,8 +27,8 @@ export const DEFAULT_VISIBILITY: Record<SiteVisibilityKey, boolean> = {
 type PublicSiteContextValue = {
   /** URL pública no storage; null se não configurado */
   logoUrl: string | null;
-  /** URL final para `<img src>` (remota ou fallback local) */
-  logoSrc: string;
+  /** URL final para `<img src>` (somente branding configurado) */
+  logoSrc?: string;
   visibility: Record<SiteVisibilityKey, boolean>;
   loaded: boolean;
 };
@@ -92,10 +91,10 @@ export function PublicSiteProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const logoSrc = logoUrl?.trim() ? logoUrl : fallbackLogo;
+  const logoSrc = logoUrl?.trim() ? logoUrl : undefined;
 
   useEffect(() => {
-    if (!loaded || typeof window === "undefined") return;
+    if (!loaded || typeof window === "undefined" || !logoSrc) return;
     syncBrandingMetaTags(toAbsoluteAssetUrl(logoSrc));
   }, [loaded, logoSrc]);
 

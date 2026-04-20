@@ -74,7 +74,7 @@ const About = () => {
           <div className="flex justify-center">
             <div className="relative">
               <div className="bg-gradient-to-br from-primary/20 to-gold/20 rounded-2xl p-8 flex items-center justify-center">
-                <img src={logoSrc} alt="SL Turismo" className="w-64 h-64 object-contain rounded-xl" />
+                {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="w-64 h-64 object-contain rounded-xl" /> : null}
               </div>
             </div>
           </div>

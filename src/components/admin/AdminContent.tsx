@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Save, Loader2, Upload } from "lucide-react";
 import type { SiteVisibilityKey } from "@/contexts/PublicSiteContext";
 import { DEFAULT_VISIBILITY } from "@/contexts/PublicSiteContext";
-import fallbackLogo from "@/assets/logo-sl-turismo.jpg";
 import { GALLERY_OBJECT_POSITION_OPTIONS, normalizeGalleryObjectPosition } from "@/lib/gallery-display";
 
 type SectionData = Record<string, string>;
@@ -332,7 +331,7 @@ const AdminContent = () => {
 
   if (loading) return <p className="text-muted-foreground">Carregando conteúdo...</p>;
 
-  const logoPreview = sections.branding?.logo_url?.trim() ? sections.branding.logo_url : fallbackLogo;
+  const logoPreview = sections.branding?.logo_url?.trim() || "";
 
   return (
     <div className="space-y-5">
@@ -358,7 +357,9 @@ const AdminContent = () => {
           <code className="rounded bg-muted/80 px-1 py-0.5 text-foreground">VITE_SUPABASE_URL</code> que o projeto onde a galeria já funciona.
         </div>
         <div className="flex flex-col sm:flex-row gap-4 items-start">
-          <img src={logoPreview} alt="Pré-visualização" className="h-20 w-auto max-w-[200px] object-contain rounded-lg border border-border bg-muted/30 p-2" />
+          {logoPreview ? (
+            <img src={logoPreview} alt="Pré-visualização" className="h-20 w-auto max-w-[200px] object-contain rounded-lg border border-border bg-muted/30 p-2" />
+          ) : null}
           <div className="space-y-2">
             <input
               ref={logoFileInputRef}
@@ -380,7 +381,7 @@ const AdminContent = () => {
               <Upload className="h-4 w-4 shrink-0" />
               <span className="underline">{logoUploading ? "A enviar…" : "Carregar novo logo"}</span>
             </Button>
-            <p className="text-[11px] text-muted-foreground">Se não houver logo no painel, o site usa o logo predefinido local.</p>
+            <p className="text-[11px] text-muted-foreground">Se não houver logo no painel, o site não exibe logo até uma ser carregada.</p>
           </div>
         </div>
       </div>

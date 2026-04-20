@@ -147,7 +147,7 @@ const Footer = () => {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto rounded-lg mb-4" />
+              {logoSrc ? <img src={logoSrc} alt="SL Turismo" className="h-16 w-auto rounded-lg mb-4" /> : null}
               <p className="text-primary-foreground/70 text-sm">{content.description}</p>
             </div>
 

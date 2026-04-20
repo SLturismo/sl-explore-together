@@ -38,7 +38,18 @@ const Events = () => {
   const goToExistingTravelForm = (eventTitle: string) => {
     if (typeof window !== "undefined") {
       window.localStorage.setItem("slturismo_event_interest_title_v1", eventTitle);
-      window.location.hash = "planejar";
+      const formSection = document.getElementById("planejar");
+      if (formSection) {
+        formSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      } else {
+        window.location.hash = "planejar";
+      }
+
+      // Garante que o formulário receba foco após o scroll suave.
+      window.setTimeout(() => {
+        const firstField = document.getElementById("name") as HTMLInputElement | null;
+        firstField?.focus();
+      }, 450);
     }
   };
 
@@ -143,7 +154,7 @@ const Events = () => {
                     onClick={() => openParticipationDialog(event.title)}
                     className="w-full mt-2 bg-primary hover:bg-primary/90"
                   >
-                    Quero participar
+                    Solicitar vaga no evento
                   </Button>
                 </CardContent>
               </Card>
@@ -153,17 +164,19 @@ const Events = () => {
         )}
       </div>
       <Dialog open={participationDialogOpen} onOpenChange={setParticipationDialogOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md p-6">
           <DialogHeader>
-            <DialogTitle className="font-display">Como deseja participar?</DialogTitle>
-            <DialogDescription>
-              Evento: <span className="font-medium text-foreground">{selectedEventTitle}</span>
+            <DialogTitle className="font-display text-xl">Solicitar vaga</DialogTitle>
+            <DialogDescription className="pt-1">
+              Escolha como deseja solicitar sua vaga no evento{" "}
+              <span className="font-medium text-foreground">{selectedEventTitle}</span>.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
             <Button
               type="button"
               variant="outline"
+              className="h-11"
               onClick={() => {
                 goToExistingTravelForm(selectedEventTitle);
                 setParticipationDialogOpen(false);
@@ -173,7 +186,7 @@ const Events = () => {
             </Button>
             <Button
               type="button"
-              className="bg-primary hover:bg-primary/90"
+              className="h-11 bg-primary hover:bg-primary/90"
               onClick={() => {
                 openWhatsAppForEvent(selectedEventTitle);
                 setParticipationDialogOpen(false);

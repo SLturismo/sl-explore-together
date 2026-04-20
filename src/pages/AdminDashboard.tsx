@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import {
   LogOut, Image, Calendar, ShieldCheck, Settings, FileText, Users,
   ChevronLeft, ChevronRight, MessageSquare,
@@ -32,8 +33,17 @@ const AdminDashboard = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [activeSection, setActiveSection] = useState("requests");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const refreshPendingRequestsCount = async () => {
+    const { count } = await supabase
+      .from("travel_requests")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "pending");
+    setPendingRequestsCount(count ?? 0);
+  };
 
   useEffect(() => {
     if (!loading && isAdmin) {
@@ -72,6 +82,40 @@ const AdminDashboard = () => {
     checkAuth();
     return () => subscription.unsubscribe();
   }, [navigate, toast]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+
+    refreshPendingRequestsCount();
+    const channel = supabase
+      .channel("admin-travel-requests-alerts")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "travel_requests" },
+        (payload) => {
+          refreshPendingRequestsCount();
+
+          if (payload.eventType !== "INSERT") return;
+          const newRow = payload.new as { status?: string; name?: string; destination?: string };
+          if (newRow?.status !== "pending") return;
+
+          toast({
+            title: "Nova solicitação recebida",
+            description: `${newRow.name || "Cliente"} · ${newRow.destination || "Destino não informado"}`,
+            action: (
+              <ToastAction altText="Ver solicitações" onClick={() => setActiveSection("requests")}>
+                Ver agora
+              </ToastAction>
+            ),
+          });
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAdmin, toast]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -129,7 +173,16 @@ const AdminDashboard = () => {
                 title={sidebarCollapsed ? item.label : undefined}
               >
                 <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                {!sidebarCollapsed && <span className="truncate text-left">{item.label}</span>}
+                {!sidebarCollapsed && (
+                  <>
+                    <span className="truncate text-left">{item.label}</span>
+                    {item.key === "requests" && pendingRequestsCount > 0 && (
+                      <span className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 ring-1 ring-amber-200">
+                        {pendingRequestsCount}
+                      </span>
+                    )}
+                  </>
+                )}
               </button>
             );
           })}
@@ -171,6 +224,11 @@ const AdminDashboard = () => {
             <div className="min-w-0 pt-0.5">
               <h1 className="text-lg font-semibold text-foreground tracking-tight">{currentItem?.label}</h1>
               <p className="text-sm text-muted-foreground mt-0.5">Painel administrativo · SL Turismo</p>
+              {activeSection === "requests" && pendingRequestsCount > 0 && (
+                <p className="text-xs text-amber-700 mt-1 font-medium">
+                  {pendingRequestsCount} nova(s) aguardando atendimento.
+                </p>
+              )}
             </div>
           </header>
 

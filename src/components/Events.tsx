@@ -165,7 +165,7 @@ const Events = () => {
       </div>
       <Dialog open={participationDialogOpen} onOpenChange={setParticipationDialogOpen}>
         <DialogContent className="sm:max-w-md p-6">
-          <DialogHeader>
+          <DialogHeader className="text-center sm:text-center">
             <DialogTitle className="font-display text-xl">Solicitar vaga</DialogTitle>
             <DialogDescription className="pt-1">
               Escolha como deseja solicitar sua vaga no evento{" "}

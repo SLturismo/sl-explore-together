@@ -8,11 +8,15 @@ import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useSectionVisible } from "@/contexts/PublicSiteContext";
 
+const TRAVEL_REQUEST_COOLDOWN_MS = 25_000;
+const TRAVEL_REQUEST_LAST_SUBMIT_KEY = "slturismo_travel_request_last_submit_v1";
+
 const TravelForm = () => {
   const visible = useSectionVisible("travel_form");
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" });
+  const [honeypot, setHoneypot] = useState("");
   const [selectedEventTitle, setSelectedEventTitle] = useState("");
 
   const [titlePrefix, setTitlePrefix] = useState("Planeje sua");
@@ -54,7 +58,22 @@ const TravelForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (honeypot.trim()) return;
     if (!form.name || !form.email || !form.destination) { toast({ title: "Preencha os campos obrigatórios", variant: "destructive" }); return; }
+    if (typeof window !== "undefined") {
+      const lastSubmit = Number(window.localStorage.getItem(TRAVEL_REQUEST_LAST_SUBMIT_KEY) || "0");
+      const now = Date.now();
+      const waitMs = TRAVEL_REQUEST_COOLDOWN_MS - (now - lastSubmit);
+      if (waitMs > 0) {
+        toast({
+          title: "Aguarde alguns segundos para enviar novamente",
+          description: `Tente novamente em ${Math.ceil(waitMs / 1000)}s.`,
+          variant: "default",
+        });
+        return;
+      }
+      window.localStorage.setItem(TRAVEL_REQUEST_LAST_SUBMIT_KEY, String(now));
+    }
     setLoading(true);
     const { error } = await supabase.from("travel_requests").insert({
       name: form.name.trim().slice(0, 100), email: form.email.trim().slice(0, 255),
@@ -63,8 +82,17 @@ const TravelForm = () => {
       trip_type: form.trip_type, notes: form.notes.trim().slice(0, 1000), status: "pending",
     });
     setLoading(false);
-    if (error) { toast({ title: "Erro ao enviar. Tente novamente.", variant: "destructive" }); }
-    else { toast({ title: "Solicitação enviada com sucesso! 🎉", description: "Entraremos em contato em breve." }); setForm({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" }); }
+    if (error) {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(TRAVEL_REQUEST_LAST_SUBMIT_KEY);
+      }
+      toast({ title: "Erro ao enviar. Tente novamente.", variant: "destructive" });
+    }
+    else {
+      toast({ title: "Solicitação enviada com sucesso! 🎉", description: "Entraremos em contato em breve." });
+      setForm({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" });
+      setHoneypot("");
+    }
   };
 
   if (!visible) return null;
@@ -83,6 +111,16 @@ const TravelForm = () => {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-5 bg-card p-6 md:p-8 rounded-xl shadow-lg border border-border">
+          <input
+            type="text"
+            name="company"
+            value={honeypot}
+            onChange={(e) => setHoneypot(e.target.value)}
+            autoComplete="off"
+            tabIndex={-1}
+            className="hidden"
+            aria-hidden="true"
+          />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-2"><Label htmlFor="name">Nome *</Label><Input id="name" value={form.name} onChange={(e) => handleChange("name", e.target.value)} placeholder="Seu nome" maxLength={100} required /></div>
             <div className="space-y-2"><Label htmlFor="email">E-mail *</Label><Input id="email" type="email" value={form.email} onChange={(e) => handleChange("email", e.target.value)} placeholder="seu@email.com" maxLength={255} required /></div>

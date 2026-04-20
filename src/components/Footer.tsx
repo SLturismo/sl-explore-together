@@ -7,10 +7,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { usePublicSite, useSectionVisible } from "@/contexts/PublicSiteContext";
 import { safeHttpUrl } from "@/lib/social-url";
 
+const NEWSLETTER_COOLDOWN_MS = 25_000;
+const NEWSLETTER_LAST_SUBMIT_KEY = "slturismo_newsletter_last_submit_v1";
+
 const Footer = () => {
   const { logoSrc } = usePublicSite();
   const showNewsletter = useSectionVisible("footer_newsletter");
   const [email, setEmail] = useState("");
+  const [newsletterHoneypot, setNewsletterHoneypot] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
 
@@ -69,15 +73,34 @@ const Footer = () => {
 
   const handleNewsletter = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (newsletterHoneypot.trim()) return;
     if (!email.trim()) return;
+    if (typeof window !== "undefined") {
+      const lastSubmit = Number(window.localStorage.getItem(NEWSLETTER_LAST_SUBMIT_KEY) || "0");
+      const now = Date.now();
+      const waitMs = NEWSLETTER_COOLDOWN_MS - (now - lastSubmit);
+      if (waitMs > 0) {
+        toast({
+          title: "Aguarde alguns segundos para tentar novamente",
+          description: `Tente novamente em ${Math.ceil(waitMs / 1000)}s.`,
+          variant: "default",
+        });
+        return;
+      }
+      window.localStorage.setItem(NEWSLETTER_LAST_SUBMIT_KEY, String(now));
+    }
     setLoading(true);
     const { error } = await supabase.from("newsletter_subscribers").insert({ email: email.trim() });
     setLoading(false);
     if (error) {
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(NEWSLETTER_LAST_SUBMIT_KEY);
+      }
       toast({ title: error.code === "23505" ? "Você já está inscrito(a)! 😊" : "Erro ao inscrever", variant: error.code === "23505" ? "default" : "destructive" });
     } else {
       toast({ title: "Inscrito(a) com sucesso! 🎉" });
       setEmail("");
+      setNewsletterHoneypot("");
     }
   };
 
@@ -103,6 +126,16 @@ const Footer = () => {
             <h3 className="font-display text-2xl font-bold text-primary-foreground mb-2">{content.newsletter_title}</h3>
             <p className="text-primary-foreground/80 text-sm mb-6">{content.newsletter_subtitle}</p>
             <form onSubmit={handleNewsletter} className="flex gap-2 max-w-md mx-auto">
+              <input
+                type="text"
+                name="company"
+                value={newsletterHoneypot}
+                onChange={(e) => setNewsletterHoneypot(e.target.value)}
+                autoComplete="off"
+                tabIndex={-1}
+                className="hidden"
+                aria-hidden="true"
+              />
               <Input type="email" placeholder="Seu melhor e-mail" value={email} onChange={(e) => setEmail(e.target.value)} required className="bg-white/90 border-0 text-foreground placeholder:text-muted-foreground" />
               <Button type="submit" variant="secondary" disabled={loading} className="shrink-0">{loading ? "..." : content.newsletter_button}</Button>
             </form>

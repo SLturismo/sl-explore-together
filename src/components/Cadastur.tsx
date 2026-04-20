@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ShieldCheck, Award, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSectionVisible } from "@/contexts/PublicSiteContext";
+import { safeHttpUrl } from "@/lib/social-url";
 
 type CadasturData = {
   numero?: string;
@@ -38,6 +39,7 @@ const Cadastur = () => {
   }, []);
 
   if (!visible) return null;
+  const verificationLink = safeHttpUrl(data.link_verificacao);
 
   return (
     <section className="py-16 bg-rose-light">
@@ -87,9 +89,9 @@ const Cadastur = () => {
                   <ShieldCheck className="h-4 w-4" />
                   Empresa regularizada
                 </div>
-                {data.link_verificacao && (
+                {verificationLink && (
                   <a
-                    href={data.link_verificacao}
+                    href={verificationLink}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium hover:bg-primary/20 transition-colors"

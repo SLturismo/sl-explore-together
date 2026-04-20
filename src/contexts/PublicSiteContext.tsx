@@ -36,6 +36,18 @@ type PublicSiteContextValue = {
 
 const PublicSiteContext = createContext<PublicSiteContextValue | null>(null);
 
+function withLogoVersion(url: string | null, updatedAt: string | null | undefined): string | null {
+  if (!url?.trim()) return null;
+  if (!updatedAt?.trim()) return url.trim();
+  try {
+    const parsed = new URL(url.trim());
+    parsed.searchParams.set("v", updatedAt);
+    return parsed.toString();
+  } catch {
+    return url.trim();
+  }
+}
+
 export function PublicSiteProvider({ children }: { children: ReactNode }) {
   const [logoUrl, setLogoUrl] = useState<string | null>(() => readCachedLogoUrl());
   const [visibility, setVisibility] = useState<Record<SiteVisibilityKey, boolean>>(DEFAULT_VISIBILITY);
@@ -46,14 +58,15 @@ export function PublicSiteProvider({ children }: { children: ReactNode }) {
     (async () => {
       const brandingPromise = supabase
         .from("site_content")
-        .select("content")
+        .select("content,updated_at")
         .eq("section_key", "branding")
         .maybeSingle()
         .then((brandingRes) => {
           if (cancelled || brandingRes.error) return;
           const b = brandingRes.data?.content as { logo_url?: string } | null;
-          const next =
+          const rawLogoUrl =
             b?.logo_url && typeof b.logo_url === "string" && b.logo_url.trim() ? b.logo_url.trim() : null;
+          const next = withLogoVersion(rawLogoUrl, brandingRes.data?.updated_at ?? null);
           setLogoUrl(next);
           writeCachedLogoUrl(next);
         });

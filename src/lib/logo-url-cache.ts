@@ -1,4 +1,5 @@
-const KEY = "slturismo_branding_logo_url_v1";
+const KEY = "slturismo_branding_logo_url_v2";
+const LEGACY_KEYS = ["slturismo_branding_logo_url_v1"];
 
 function isAllowedLogoUrl(u: string): boolean {
   const t = u.trim();
@@ -16,6 +17,7 @@ function isAllowedLogoUrl(u: string): boolean {
 export function readCachedLogoUrl(): string | null {
   if (typeof window === "undefined") return null;
   try {
+    LEGACY_KEYS.forEach((legacyKey) => localStorage.removeItem(legacyKey));
     const raw = localStorage.getItem(KEY);
     if (!raw) return null;
     const u = raw.trim();

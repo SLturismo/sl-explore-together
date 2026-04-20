@@ -13,11 +13,30 @@ const TravelForm = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", destination: "", dates: "", budget: "", trip_type: "", notes: "" });
+  const [selectedEventTitle, setSelectedEventTitle] = useState("");
 
   const [titlePrefix, setTitlePrefix] = useState("Planeje sua");
   const [titleHighlight, setTitleHighlight] = useState("Viagem ou Evento");
   const [subtitle, setSubtitle] = useState("Conte-nos seus sonhos e criaremos a viagem ou evento perfeito para você");
   const [buttonText, setButtonText] = useState("✈️ Enviar Solicitação");
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const selectedEventTitle = window.localStorage.getItem("slturismo_event_interest_title_v1");
+    if (!selectedEventTitle?.trim()) return;
+
+    const eventTitle = selectedEventTitle.trim();
+    setSelectedEventTitle(eventTitle);
+    setForm((prev) => ({
+      ...prev,
+      trip_type: "evento",
+      destination: prev.destination?.trim() ? prev.destination : eventTitle,
+      notes: prev.notes?.trim()
+        ? prev.notes
+        : `Interesse no evento: ${eventTitle}`,
+    }));
+    window.localStorage.removeItem("slturismo_event_interest_title_v1");
+  }, []);
 
   useEffect(() => {
     supabase.from("site_content").select("content").eq("section_key", "travel_form").maybeSingle().then(({ data }) => {
@@ -57,6 +76,11 @@ const TravelForm = () => {
           {titlePrefix} <span className="text-primary">{titleHighlight}</span>
         </h2>
         <p className="text-center text-muted-foreground mb-10">{subtitle}</p>
+        {selectedEventTitle && (
+          <div className="mb-6 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
+            Evento selecionado: <span className="font-medium">{selectedEventTitle}</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-5 bg-card p-6 md:p-8 rounded-xl shadow-lg border border-border">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -44,23 +44,35 @@ export function PublicSiteProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [brandingRes, visRes] = await Promise.all([
-        supabase.from("site_content").select("content").eq("section_key", "branding").maybeSingle(),
-        supabase.from("site_content").select("content").eq("section_key", "visibility").maybeSingle(),
-      ]);
-      if (cancelled) return;
-      if (!brandingRes.error) {
-        const b = brandingRes.data?.content as { logo_url?: string } | null;
-        const next =
-          b?.logo_url && typeof b.logo_url === "string" && b.logo_url.trim() ? b.logo_url.trim() : null;
-        setLogoUrl(next);
-        writeCachedLogoUrl(next);
-      }
-      const v = visRes.data?.content as Partial<Record<SiteVisibilityKey, boolean>> | null;
-      if (v && typeof v === "object") {
-        setVisibility({ ...DEFAULT_VISIBILITY, ...v });
-      }
-      setLoaded(true);
+      const brandingPromise = supabase
+        .from("site_content")
+        .select("content")
+        .eq("section_key", "branding")
+        .maybeSingle()
+        .then((brandingRes) => {
+          if (cancelled || brandingRes.error) return;
+          const b = brandingRes.data?.content as { logo_url?: string } | null;
+          const next =
+            b?.logo_url && typeof b.logo_url === "string" && b.logo_url.trim() ? b.logo_url.trim() : null;
+          setLogoUrl(next);
+          writeCachedLogoUrl(next);
+        });
+
+      const visibilityPromise = supabase
+        .from("site_content")
+        .select("content")
+        .eq("section_key", "visibility")
+        .maybeSingle()
+        .then((visRes) => {
+          if (cancelled) return;
+          const v = visRes.data?.content as Partial<Record<SiteVisibilityKey, boolean>> | null;
+          if (v && typeof v === "object") {
+            setVisibility({ ...DEFAULT_VISIBILITY, ...v });
+          }
+        });
+
+      await Promise.allSettled([brandingPromise, visibilityPromise]);
+      if (!cancelled) setLoaded(true);
     })();
     return () => {
       cancelled = true;

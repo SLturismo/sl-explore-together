@@ -30,14 +30,19 @@ const Events = () => {
   const [titlePrefix, setTitlePrefix] = useState("Eventos &");
   const [titleHighlight, setTitleHighlight] = useState("Experiências");
   const [subtitle, setSubtitle] = useState("Viagens em grupo e tours exclusivos para mulheres que querem explorar o mundo juntas");
-  const [phoneLink, setPhoneLink] = useState("5567999535548");
+
+  const openExistingTravelForm = (eventTitle: string) => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("slturismo_event_interest_title_v1", eventTitle);
+      window.location.hash = "planejar";
+    }
+  };
 
   useEffect(() => {
     const load = async () => {
-      const [{ data: contentData }, { data: eventsData }, { data: footerData }] = await Promise.all([
+      const [{ data: contentData }, { data: eventsData }] = await Promise.all([
         supabase.from("site_content").select("content").eq("section_key", "events").maybeSingle(),
         supabase.from("events").select("*").eq("active", true).order("created_at", { ascending: false }),
-        supabase.from("site_content").select("content").eq("section_key", "footer").maybeSingle(),
       ]);
 
       if (contentData?.content) {
@@ -45,11 +50,6 @@ const Events = () => {
         if (c.title_prefix) setTitlePrefix(c.title_prefix);
         if (c.title_highlight) setTitleHighlight(c.title_highlight);
         if (c.subtitle) setSubtitle(c.subtitle);
-      }
-
-      if (footerData?.content) {
-        const f = footerData.content as any;
-        if (f.phone_link) setPhoneLink(f.phone_link);
       }
 
       setEvents(eventsData || []);
@@ -114,13 +114,13 @@ const Events = () => {
                       <span className="flex items-center gap-1"><Users className="h-3 w-3" />{event.spots} vagas</span>
                     )}
                   </div>
-                  <a
-                    href={`https://wa.me/${phoneLink}?text=${encodeURIComponent(`Olá! Tenho interesse no evento: ${event.title}`)}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Button
+                    type="button"
+                    onClick={() => openExistingTravelForm(event.title)}
+                    className="w-full mt-2 bg-primary hover:bg-primary/90"
                   >
-                    <Button className="w-full mt-2 bg-primary hover:bg-primary/90">Quero participar</Button>
-                  </a>
+                    Quero participar
+                  </Button>
                 </CardContent>
               </Card>
             );

@@ -38,7 +38,10 @@
     }
   ],
   "rewrites": [
-    { "source": "/favicon.ico", "destination": "/og-image.jpg" },
+    {
+      "source": "/favicon.ico",
+      "destination": "https://rhzsybbikjiliehqmfsn.supabase.co/storage/v1/object/public/gallery/branding/logo-1776126254329-7758d4ea.png?v=20260414"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"

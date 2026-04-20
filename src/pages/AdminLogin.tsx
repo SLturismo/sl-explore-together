@@ -13,7 +13,6 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
   const navigate = useNavigate();
@@ -46,35 +45,6 @@ const AdminLogin = () => {
     } else {
       navigate("/admin");
     }
-  };
-
-  const handleSignup = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (password.length < 6) {
-      toast({ title: "A senha deve ter pelo menos 6 caracteres", variant: "destructive" });
-      return;
-    }
-    const emailTrim = email.trim();
-    setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email: emailTrim, password });
-    setLoading(false);
-    if (error) {
-      toast({ title: "Erro ao criar conta", description: error.message, variant: "destructive" });
-      return;
-    }
-    // Com "Confirm email" ativo no Supabase, session vem null até o usuário clicar no link do e-mail.
-    if (data.user && !data.session) {
-      toast({
-        title: "Confirme seu e-mail",
-        description:
-          "Abra a caixa de entrada (e o spam), clique no link do Supabase e só então faça login. Sem isso o sistema mostra credenciais inválidas.",
-        duration: 12000,
-      });
-      setIsSignup(false);
-      return;
-    }
-    toast({ title: "Conta criada com sucesso! ✅", description: "Agora faça login para acessar o painel." });
-    setIsSignup(false);
   };
 
   const handleForgotPassword = async (e: React.FormEvent) => {
@@ -110,9 +80,7 @@ const AdminLogin = () => {
           <p className="text-muted-foreground text-sm mt-1">
             {showForgot
               ? "Informe o e-mail da sua conta"
-              : isSignup
-                ? "Crie sua conta de administrador"
-                : "Acesse com suas credenciais"}
+              : "Acesse com suas credenciais"}
           </p>
         </div>
         {showForgot ? (
@@ -134,7 +102,7 @@ const AdminLogin = () => {
           </form>
         ) : (
           <>
-            <form onSubmit={isSignup ? handleSignup : handleLogin} className="space-y-4">
+            <form onSubmit={handleLogin} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email">E-mail</Label>
                 <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
@@ -147,27 +115,16 @@ const AdminLogin = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  autoComplete={isSignup ? "new-password" : "current-password"}
+                  autoComplete="current-password"
                 />
               </div>
               <Button type="submit" className="w-full bg-primary hover:bg-primary/90" disabled={loading}>
-                {loading ? (isSignup ? "Criando..." : "Entrando...") : isSignup ? "Criar Conta" : "Entrar"}
+                {loading ? "Entrando..." : "Entrar"}
               </Button>
             </form>
-            {!isSignup && (
-              <div className="text-center mt-2">
-                <button type="button" className="text-sm text-primary hover:underline" onClick={() => setShowForgot(true)}>
-                  Esqueci minha senha
-                </button>
-              </div>
-            )}
-            <div className="text-center mt-4">
-              <button
-                type="button"
-                className="text-sm text-primary hover:underline"
-                onClick={() => setIsSignup(!isSignup)}
-              >
-                {isSignup ? "Já tem conta? Faça login" : "Primeiro acesso? Criar conta"}
+            <div className="text-center mt-2">
+              <button type="button" className="text-sm text-primary hover:underline" onClick={() => setShowForgot(true)}>
+                Esqueci minha senha
               </button>
             </div>
           </>
